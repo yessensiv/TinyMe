@@ -1,0 +1,35 @@
+import type { CSSProperties } from "react";
+const paths: Record<string, string> = {
+ home: "m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1Z",
+ room: "m3 7 9-4 9 4v10l-9 4-9-4Zm9-4v10m-9-6 9 6 9-6m-9 6v8",
+ sparkles: "m12 3 2.5 6.5L21 12l-6.5 2.5L12 21l-2.5-6.5L3 12l6.5-2.5Z",
+ target: "M21 12a9 9 0 1 1-9-9m6 9a6 6 0 1 1-6-6m0 6 9-9m-5 0h5v5",
+ shirt: "m8 3-5 3-2 5 5 2v8h12v-8l5-2-2-5-5-3a4 4 0 0 1-8 0Z",
+ album: "M4 3h16v18H4Zm0 4h16M8 12h8m-8 4h5",
+ graph: "M12 4v5m-6 8 4-4m4 0 4 4M9 11a3 3 0 1 0 6 0 3 3 0 0 0-6 0ZM9 3a3 3 0 1 0 6 0 3 3 0 0 0-6 0ZM2 19a3 3 0 1 0 6 0 3 3 0 0 0-6 0Zm14 0a3 3 0 1 0 6 0 3 3 0 0 0-6 0Z",
+ friends: "M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2m20 0v-2a4 4 0 0 0-3-3.9M12 6a4 4 0 1 1-8 0 4 4 0 0 1 8 0Zm4-3.9a4 4 0 0 1 0 7.8",
+ settings: "M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8ZM9 3h6l1 3 3 1 2 5-2 3-1 3-3 1-3 2-3-2-3-1-1-3-2-3 2-5 3-1Z",
+ arrow: "M4 12h16m-6-6 6 6-6 6", chevron: "m9 5 7 7-7 7",
+ plus: "M12 5v14M5 12h14", check: "m5 12 4 4L19 6", close: "m6 6 12 12M6 18 18 6",
+ bell: "M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9m-12 4h0m4 8h4",
+ search: "M21 21l-5-5M18 10a8 8 0 1 1-16 0 8 8 0 0 1 16 0Z",
+ book: "M12 5v16M3 3l9 2 9-2v16l-9 2-9-2Z",
+ pen: "m4 16 12-12 4 4L8 20l-5 1Zm9-9 4 4",
+ activity: "M2 12h5l3-9 4 18 3-9h5", language: "M3 4h12M9 2v2M5 4c0 6 3 9 8 11M13 4c0 6-4 11-10 13m10 4 4-10 4 10m-6-4h4",
+ leaf: "M20 3C8 2 2 8 5 16c8 4 15-2 15-13ZM5 20 15 10",
+ clock: "M12 8v5l3 2M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z",
+ sun: "M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1 1m12 12 1 1M5 19l1-1M18 6l1-1M16 12a4 4 0 1 1-8 0 4 4 0 0 1 8 0Z",
+ moon: "M21 13A9 9 0 0 1 11 3a9 9 0 1 0 10 10Z",
+ lock: "M5 10h14v11H5Zm3 0V6a4 4 0 0 1 8 0v4",
+ eye: "M2 12s4-7 10-7 10 7 10 7-4 7-10 7-10-7-10-7Zm7 0a3 3 0 1 0 6 0 3 3 0 0 0-6 0Z",
+ music: "M9 18V5l11-2v13M9 9l11-2M3 18a3 3 0 1 0 6 0 3 3 0 0 0-6 0Zm11-2a3 3 0 1 0 6 0 3 3 0 0 0-6 0Z",
+ calendar: "M4 5h16v16H4Zm0 5h16M8 2v5m8-5v5", dots: "M5 12h.01M12 12h.01M19 12h.01",
+ trophy: "M8 3h8v7a4 4 0 0 1-8 0ZM8 5H4v3a4 4 0 0 0 4 4m8-7h4v3a4 4 0 0 1-4 4m-4 2v6m-4 1h8",
+ heart: "M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8L12 21l8.8-8.6a5.5 5.5 0 0 0 0-7.8Z",
+ menu: "M4 6h16M4 12h16M4 18h16", info: "M12 11v6m0-10h.01M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z",
+ volume: "m11 4-6 5H2v6h3l6 5Zm4 4a6 6 0 0 1 0 8m3-11a10 10 0 0 1 0 14",
+ logout: "M9 3H3v18h6m5-14 5 5-5 5m-7-5h12",
+};
+export function Icon({ name, size = 20, className = "", style }: { name: string; size?: number; className?: string; style?: CSSProperties }) {
+ return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.65" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className={className} style={style}><path d={paths[name] || paths.sparkles} /></svg>;
+}

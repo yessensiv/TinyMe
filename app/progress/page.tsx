@@ -1,0 +1,20 @@
+"use client";
+import { useState } from "react";
+import { snapshots } from "@/data/mock";
+import { Avatar } from "@/features/avatar/avatar";
+import { useDemo } from "@/features/demo/demo-provider";
+import { PageHeader, Modal, Tag } from "@/components/ui/primitives";
+import { Icon } from "@/components/ui/icon";
+import type { Snapshot } from "@/types";
+export default function ProgressPage() {
+ const { outfit }=useDemo();const [filter,setFilter]=useState("all");const [compare,setCompare]=useState(false);const [selected,setSelected]=useState<Snapshot|null>(null);
+ const visible=snapshots.filter(s=>filter==="all"||s.type===filter);
+ return <div className="page-enter"><PageHeader eyebrow="ТВОЯ ИСТОРИЯ В МАЛЕНЬКИХ МОМЕНТАХ" title="Посмотри, как далеко ты уже" description="Иногда рост проще заметить, если на минуту оглянуться." action={<button className="button primary" onClick={()=>setCompare(true)}><Icon name="album" size={17}/>Раньше и сейчас</button>}/>
+ <div className="album-summary"><div><span className="icon-tile lavender"><Icon name="calendar" size={21}/></span><span><strong>48 дней</strong><small>в твоём маленьком мире</small></span></div><div><span className="icon-tile sage"><Icon name="check" size={21}/></span><span><strong>32 шага</strong><small>уже стали частью пути</small></span></div><div><span className="icon-tile peach"><Icon name="trophy" size={21}/></span><span><strong>6 вех</strong><small>которые хочется сохранить</small></span></div></div>
+ <div className="filter-bar"><div className="tabs">{[["all","Все моменты"],["milestone","Важные результаты"],["month","Снимки месяца"]].map(([id,label])=><button key={id} className={filter===id?"active":""} onClick={()=>setFilter(id)}>{label}</button>)}</div><span className="subtle-count"><Icon name="lock" size={13}/>Только для тебя</span></div>
+ <div className="album-grid">{visible.map((s,i)=><button key={s.id} className={"snapshot-card snapshot-"+s.theme} onClick={()=>setSelected(s)}><div className="snapshot-art"><span className="snapshot-stamp">TINY MOMENTS</span><div className="snapshot-orbit"/><Avatar outfit={{...outfit,shirt:s.type==="start"?"#b8b09e":outfit.shirt}} pose={s.type==="start"?"idle":i%2?"read":"draw"} stage={s.level}/><span className="snapshot-level">уровень {s.level}</span><span className="snapshot-stars">✧</span></div><div className="snapshot-caption"><span>{s.date}</span><h3>{s.title}</h3><p>{s.description}</p><Tag>{s.type==="start"?"Начало истории":s.type==="month"?"Снимок месяца":"Новая веха"}</Tag></div></button>)}</div>
+ <div className="gentle-note"><Icon name="album" size={17}/>Альбом будет автоматически сохранять важные вехи и снимки месяца. Сейчас здесь примеры.</div>
+ {compare&&<Modal title="Маленькие шаги. Большая разница." description="Сравни два момента своей истории." onClose={()=>setCompare(false)}><div className="compare-grid"><div><div className="compare-scene before"><Avatar outfit={{...outfit,shirt:"#b8b09e"}} stage={1}/></div><span className="small-label">12 СЕНТЯБРЯ</span><h3>Первые шаги</h3><p className="muted">Любопытство и чистый лист</p></div><div><div className="compare-scene after"><Avatar outfit={outfit} pose="draw" stage={3}/></div><span className="small-label">29 ОКТЯБРЯ</span><h3>Больше уверенности</h3><p className="muted">32 действия, которые имели значение</p></div></div><div className="info-box mt-5"><Icon name="sparkles"/><p>Иллюстрация: уровень 1 → 3. Открыто рисование в скетчбуке. Твой путь стал видимым.</p></div></Modal>}
+ {selected&&<Modal title={selected.title} description={selected.description} onClose={()=>setSelected(null)}><div className={"snapshot-art snapshot-"+selected.theme}><Avatar outfit={outfit} pose={selected.type==="start"?"idle":"draw"} stage={selected.level}/></div><div className="flex justify-between mt-5"><Tag>{selected.date}</Tag><Tag color="lavender">Уровень {selected.level}</Tag></div><p className="muted mt-5">Сохранённый момент: внешность, освоенные действия и навыки на эту дату.</p></Modal>}
+ </div>;
+}
