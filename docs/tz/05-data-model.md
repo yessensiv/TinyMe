@@ -1,72 +1,44 @@
-## 5. Модель данных
+# 5. Модель данных
 
-### 5.1. Принцип хранения
+## Сущности
 
-**Достижение хранится один раз.** Комната, граф и статистика используют ссылки на него или вычисляемые представления.
-
-Предмет интерьера не является отдельной копией достижения. Графовый узел также не хранит дублирующий бизнес-объект.
-
-### 5.2. Сущности
-
-| Сущность | Основные поля |
+| Сущность | Поля |
 |---|---|
-| `Profile` | `id`, `displayName`, `createdAt`, `timezone`, `locale` |
-| `Skill` | `id`, `title`, `color`, `icon`, `createdAt`, `archivedAt?`, `isCustom` |
-| `Goal` | `id`, `title`, `description?`, `skillId`, `status`, `dueDate?`, `createdAt`, `completedAt?`, `archivedAt?` |
-| `Task` | `id`, `goalId?`, `skillId`, `title`, `description?`, `difficulty`, `type`, `status`, `dueDate?`, `createdAt`, `completedAt?` |
-| `Achievement` | `id`, `kind`, `title`, `skillId`, `date`, `xp`, `item?`, `links`, `taskId?`, `goalId?`, `durationMinutes?`, `levelReached?`, `rulesVersion` |
-| `AvatarState` | `skinColor`, `hairColor`, `hairId`, `outfitId`, `accessoryId?` |
-| `AvatarChange` | `id`, `date`, `state` |
-| `Unlock` | `id`, `assetId`, `sourceAchievementId`, `unlockedAt` |
-| `RoomPlacement` | `slotId`, `achievementId` |
-| `Preferences` | `roomTheme`, `graphTheme`, `motionPreference`, `onboardingCompleted` |
-| `AppState` | `schemaVersion`, `revision`, `profile`, коллекции сущностей, `preferences` |
+| Profile | id, displayName, createdAt, locale |
+| ActivityState | totalActiveMs, accountedMinutes |
+| Wallet | balance |
+| CatalogItem | id, title, category, price, width, depth, sprite, purchasable |
+| InventoryItem | id, catalogId, acquiredAt, source: starter/purchase, purchaseId? |
+| Purchase | id, catalogId, inventoryItemId, pricePaid, createdAt |
+| Room | id, width: 12, depth: 8, wallThemeId, floorThemeId, placements |
+| Placement | inventoryItemId, x, y |
+| Preferences | soundEnabled, reducedMotion, onboardingCompleted |
+| AppState | schemaVersion, revision, profile, activity, wallet, inventory, purchases, room, preferences |
 
-`kind` достижения:
+Каталог и стартовая схема комнаты поставляются с приложением. В сохранении лежат ссылки на каталог; историческая цена покупки хранится отдельно и не меняется при будущей смене цен.
 
-- `task_completion` — результат реального действия;
-- `level_milestone` — наградная веха.
+## Правила целостности
 
-```ts
-type Achievement = {
-  id: string;
-  kind: "task_completion" | "level_milestone";
-  title: string;
-  skillId: string;
-  date: string; // ISO 8601, UTC
-  xp: number;
-  item?: {
-    catalogId: string;
-    stage: number;
-  };
-  links: string[]; // ID связанных достижений
-  taskId?: string;
-  goalId?: string;
-  durationMinutes?: number;
-  levelReached?: number;
-  rulesVersion: number;
-};
-```
+- Все ID уникальны; inventoryItemId ссылается на существующую копию.
+- Каждая копия ссылается на известный catalogId.
+- Покупка и её копия взаимно связаны; для стартовых предметов purchaseId отсутствует.
+- У одной покупки ровно одна копия, у одной копии не более одной покупки.
+- totalActiveMs — неотрицательное целое число; accountedMinutes = floor(totalActiveMs / 60000).
+- Сумма заработанных монет равна accountedMinutes.
+- balance = accountedMinutes − сумма pricePaid всех покупок; balance ≥ 0.
+- Стартовые предметы не создают расходы и не начисляют монеты.
+- Остаток минуты вычисляется как totalActiveMs % 60000 и отдельно не хранится.
+- Координаты целые; footprints внутри комнаты и не пересекаются.
+- Одна копия встречается в placements не более одного раза.
+- «Размещён/свободен» вычисляется из placements, не дублируется в инвентаре.
+- revision увеличивается на каждую подтверждённую запись.
 
-### 5.3. Правила целостности
+## Временные данные
 
-- ID генерируются независимо от названий.
-- У завершённой задачи — не более одного достижения выполнения.
-- У вехи уникальна пара `skillId + levelReached`.
-- XP вехи равен нулю: она не начисляет повторно XP породивших её действий.
-- Суммарный XP навыка вычисляется по достижениям выполнения.
-- Уровни и статистика являются производными данными.
-- Связь не может вести на отсутствующее достижение или на самого себя.
-- Направление связи задаёт её смысл; на графе связь может отображаться без стрелки.
-- Календарный срок задачи хранится как `YYYY-MM-DD`; моменты событий — в UTC.
+В памяти находятся время текущей сессии, опорная монотонная отметка, статус активности, владелец блокировки, выбранная копия и предпросмотр позиции. Они не восстанавливаются как активный таймер после перезагрузки.
 
-### 5.4. Исправление ошибок
+Даты событий — ISO 8601 UTC. Календарное время служит подписям и не участвует в заработке.
 
-Предлагаемое правило MVP:
+## Импорт и миграции
 
-- До окончательного подтверждения выполнение можно отменить.
-- После сохранения достижение остаётся в истории.
-- Название и заметку можно уточнить.
-- XP, навык и время события не редактируются задним числом.
-
-Полноценное исправление с пересчётом XP требует отдельного согласования: оно затрагивает требование о неоткатываемом прогрессе.
+Полный снимок содержит schemaVersion. Валидатор проверяет все инварианты до замены состояния. Поддерживаемые старые схемы последовательно мигрируют. Документ ТЗ 2.0 не задаёт номер схемы хранения: первая реализованная схема начинается с 1. Миграция данных старой концепции XP не требуется: она в репозитории не реализована.
