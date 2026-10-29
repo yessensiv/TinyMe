@@ -1,69 +1,20 @@
-import Image from "next/image";
-
-export default function Home() {
-  return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.tsx
-            </code>{" "}
-            file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
+import Link from "next/link";
+import { PageHeading } from "@/components/ui/page-heading";
+import { Coin, Icon } from "@/components/ui/icon";
+import { PixelItem } from "@/components/ui/pixel-item";
+import { RoomPreview } from "@/features/room/room-preview";
+import { demoActivity, demoInventory, demoRoom } from "@/config/demo";
+export default function RoomPage() {
+  return <>
+    <PageHeading eyebrow="Дом, милый дом" title="Моя комната" description="Твоё маленькое убежище от большого мира. Добавь немного себя в каждый уголок." action={<button disabled className="prototype-button"><Icon name="edit" className="size-4"/>Редактировать комнату</button>}/>
+    <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_280px]">
+      <section className="panel overflow-hidden" aria-label="Предпросмотр комнаты"><div className="flex flex-wrap items-center justify-between gap-2 border-b border-line px-5 py-4"><span className="text-sm font-medium">Тихое утро</span><span className="flex items-center gap-1.5 text-[11px] text-muted"><Icon name="grid" className="size-3.5"/>{demoRoom.width} × {demoRoom.depth} клеток</span></div><div className="bg-[#eef0e6] px-2 pt-2 pb-5 sm:px-7"><RoomPreview/></div><div className="flex flex-wrap items-center justify-between gap-3 px-5 py-4"><p className="flex items-center gap-2 text-xs text-muted"><Icon name="box" className="size-4"/>{demoRoom.placements.length} предмета в комнате</p><span className="rounded-full bg-sage px-3 py-1 text-[10px] font-medium text-forest">Режим просмотра</span></div></section>
+      <aside className="grid gap-5 sm:grid-cols-2 xl:grid-cols-1" aria-label="Время и предметы">
+        <section className="panel p-5"><div className="flex items-center justify-between"><h2 className="text-sm font-semibold">Минута для себя</h2><Icon name="clock" className="size-4 text-muted"/></div><p className="mt-5 font-mono text-4xl tracking-tight">{demoActivity.session}<span className="ml-2 font-sans text-xs text-muted">мин : сек</span></p><p className="mt-2 text-xs text-muted">Пример активной сессии</p><div className="mt-5 flex justify-between text-xs"><span className="text-muted">До следующей монеты</span><span>{demoActivity.secondsToCoin} сек</span></div><div aria-hidden="true" className="mt-2 h-1.5 rounded-full bg-sage"><div className="h-full w-3/5 rounded-full bg-[#8aa475]"/></div><div className="mt-5 flex items-center gap-2 border-t border-line pt-4 text-xs"><Coin className="size-4"/>1 активная минута = 1 монета</div><p className="mt-3 text-[11px] leading-5 text-muted">В готовом приложении время будет учитываться только в открытой вкладке с фокусом.</p></section>
+        <section className="rounded-2xl border border-[#d8e2ce] bg-sage p-5"><span className="text-[10px] font-semibold tracking-widest text-forest uppercase">Ещё немного уюта</span><div className="flex items-center gap-2"><div><h2 className="mt-3 text-lg font-semibold">Дом начинается<br/>с мелочей</h2><p className="mt-2 text-xs leading-5 text-muted">Растения, мягкое кресло и свет для тёплых вечеров.</p></div><PixelItem kind="plant" className="w-20 shrink-0"/></div><Link href="/shop" className="mt-4 inline-flex min-h-10 items-center gap-2 text-sm font-semibold text-forest">Заглянуть в магазин<Icon name="arrow" className="size-4"/></Link></section>
+      </aside>
     </div>
-  );
+    <section className="mt-6 grid gap-4 sm:grid-cols-3" aria-label="Обзор пространства">{[{ icon: "box", value: `${demoInventory.length} предметов`, label: "В твоей коллекции" }, { icon: "room", value: `${demoRoom.placements.length} в комнате`, label: "Уже на своём месте" }, { icon: "clock", value: demoActivity.total, label: "Общее время · пример" }].map(stat => <div key={stat.icon} className="panel flex items-center gap-4 p-5"><span className="rounded-xl bg-paper p-3 text-forest"><Icon name={stat.icon}/></span><div><p className="text-sm font-semibold">{stat.value}</p><p className="mt-1 text-xs text-muted">{stat.label}</p></div></div>)}</section>
+    <div className="mt-6 flex flex-wrap items-center justify-between gap-4 px-1"><p className="text-sm text-muted">Твои любимые вещи уже ждут своего места.</p><Link href="/inventory" className="secondary-link">Открыть инвентарь<Icon name="arrow" className="size-4"/></Link></div>
+  </>;
 }
