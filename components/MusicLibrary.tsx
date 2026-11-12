@@ -340,7 +340,7 @@ export default function MusicLibrary({
                     </button>
                   </>
                 )}
-                {!t.builtin && (
+                {!t.builtin && !t.workshop && (
                   <button
                     className="track-delete" aria-label={`Удалить ${t.title}`}
                     disabled={editing}
