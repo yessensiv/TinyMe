@@ -1,4 +1,4 @@
-п»ї.page { max-width: 1380px; margin: 0 auto; padding: 0 48px 32px; color: var(--color-text); font-family: var(--font-sans); font-size: 14px; }
+.page { max-width: 1380px; margin: 0 auto; padding: 0 48px 32px; color: var(--color-text); font-family: var(--font-sans); font-size: 14px; }
 .page svg { width: 18px; height: 18px; flex-shrink: 0; }
 .page h1, .page h2, .page p { margin: 0; }
 .page a { text-decoration: none; color: inherit; }
