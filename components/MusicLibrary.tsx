@@ -72,7 +72,7 @@ export default function MusicLibrary({
       </div>
       <p role="status" className="music-cloud-badge"><Cloud size={16} strokeWidth={1.75} aria-hidden="true"/>
         {music.loadError
-          ? "Коллекция недоступна. Проверьте соединение."
+          ? "Не удалось открыть коллекцию. Проверьте доступ браузера к хранилищу."
           : !music.loaded
             ? "Открываем коллекцию…"
             : music.saving

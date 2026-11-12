@@ -2,6 +2,7 @@
 import dynamic from "next/dynamic";
 import packageInfo from "../package.json";
 import ThemeSelector from "./ThemeSelector";
+import LocalAccountPanel from "./LocalAccountPanel";
 import ProgressPanel from "./ProgressPanel";
 import { useProgress } from '@/lib/use-progress';
 import { displayedSkillRewards, skillActivities } from '@/domain/skill-growth';
@@ -30,7 +31,7 @@ import {
   Sparkles,
   LampDesk,
   X,
-  Cloud,
+  HardDrive,
   CloudRain,
   Sun,
   Moon,
@@ -64,7 +65,7 @@ import type { StatisticsPeriod } from "@/lib/music-statistics";
 import MusicStatistics from "./MusicStatistics";
 import ResidentPanel from './ResidentPanel';
 import { useRoomResident } from '@/lib/use-room-resident';
-import { supabase } from "@/lib/supabase";
+
 import { appearanceOf, colorPresets, type Appearance } from "@/domain/appearance";
 import FurnitureColorPanel from "./FurnitureColorPanel";
 import FurniturePreview from "./FurniturePreview";
@@ -72,7 +73,7 @@ import FurnitureInspector from "./FurnitureInspector";
 import MusicLibrary from "./MusicLibrary";
 import RoomStage from "./RoomStage";
 import AppNavigation from "./AppNavigation";
-import AccountPanel from "./AccountPanel";
+
 import SessionStrip from "./SessionStrip";
 import NotificationCenter from "./NotificationCenter";
 import { useNotifications } from "@/lib/use-notifications";
@@ -273,21 +274,6 @@ export default function MyRoom({initialView='room'}:{initialView?:'room'|'graph'
     const escape=(e:KeyboardEvent)=>{if(e.key==='Escape'&&!e.defaultPrevented&&!document.querySelector('dialog[open]')){if(window.location.pathname==='/graph')window.history.pushState(null,'','/room');setView('room');requestAnimationFrame(()=>dockReturn.current?.focus({preventScroll:true}));}};
     document.addEventListener('keydown',escape);return()=>document.removeEventListener('keydown',escape);
   },[view]);
-  const [accountRecovery,setAccountRecovery]=useState(false);
-  useEffect(()=>{
-    const url=new URL(window.location.href);
-    if(url.searchParams.get('account')){
-      setView('profile');
-      setAccountRecovery(url.searchParams.get('account')==='recovery');
-      url.searchParams.delete('account');
-      url.searchParams.set('view','profile');
-      window.history.replaceState(null,'',url.pathname+url.search+url.hash);
-    }
-    const subscription=supabase?.auth.onAuthStateChange(event=>{
-      if(event==='PASSWORD_RECOVERY'){setAccountRecovery(true);setView('profile');}
-    });
-    return()=>subscription?.data.subscription.unsubscribe();
-  },[]);
   const [period, setPeriod] = useState<StatisticsPeriod>("7");
   const products=useMemo(()=>catalog.filter(p=>category==='Все'||(category==='Избранное'?favorites.includes(p.id):category==='Новинки'?!!p.collection:category==='Игровая коллекция'?p.collection==='gaming'&&(gameFilter==='Все игры'||p.game===gameFilter):p.category===category))
     .filter(p=>[p.name,p.category,p.game??''].join(' ').toLocaleLowerCase('ru').replaceAll('ё','е').includes(search.trim().toLocaleLowerCase('ru').replaceAll('ё','е')))
@@ -385,7 +371,7 @@ export default function MyRoom({initialView='room'}:{initialView?:'room'|'graph'
         activeMs={r.room.activeMs} running={r.timerRunning}
         status={r.status}
         cloud={!!r.user}
-        isAdmin={r.role==='admin'}
+
       />
       <div className="immersive-room">
 
@@ -824,8 +810,8 @@ export default function MyRoom({initialView='room'}:{initialView?:'room'|'graph'
           {view === "stats" && <MusicStatistics music={music.music} period={period} onPeriod={setPeriod}
             playing={music.playing} currentId={music.current.id} onPlay={music.play} onBrowse={() => setView("music")} />}
           {view === "profile" && <>
-            <div className="page-heading"><div><div className="eyebrow">ЛИЧНОЕ ПРОСТРАНСТВО</div><h1>{r.user?'Мой профиль.':'Добро пожаловать.'}</h1><p>Пусть твоя комната всегда будет рядом.</p></div></div>
-            {!r.loaded ? <p role="status">Открываем профиль…</p> : <AccountPanel key={`${r.user?.id??'guest'}:${accountRecovery}`} user={r.user} recovery={accountRecovery} onRecovered={()=>setAccountRecovery(false)} balance={r.room.balance} items={r.room.items.length} activeMs={r.room.activeMs}/>}
+            <div className="page-heading"><div><div className="eyebrow">ЛИЧНОЕ ПРОСТРАНСТВО</div><h1>Локальный профиль.</h1><p>Твоё пространство в этом браузере.</p></div></div>
+            <LocalAccountPanel/>
           </>}
           {view === "settings" && (
             <>
@@ -839,10 +825,10 @@ export default function MyRoom({initialView='room'}:{initialView?:'room'|'graph'
               <div className="settings-grid">
                 <ThemeSelector />
                 <section className="settings-card">
-                  <Cloud size={16} strokeWidth={1.75}/>
-                  <h2>Твой аккаунт</h2>
-                  <p>{r.user?'Имя, аватар и облачная комната — в твоём профиле.':'Зарегистрируйся, чтобы сохранять комнату и покупки между устройствами.'}</p>
-                  <button className="button primary" onClick={()=>setView('profile')}>{r.user?'Открыть профиль':'Вход и регистрация'}</button>
+                  <HardDrive size={16} strokeWidth={1.75}/>
+                  <h2>Локальное сохранение</h2>
+                  <p>Комната, покупки, музыка и прогресс остаются в этом браузере. Аккаунт определяет доступ к мастерской.</p>
+                  <button className="button primary" onClick={()=>setView('profile')}>О сохранении</button>
                 </section>
                 <section className="settings-card">
                   <Volume2 size={16}  strokeWidth={1.75}/>
@@ -868,9 +854,9 @@ export default function MyRoom({initialView='room'}:{initialView?:'room'|'graph'
                   <p className="footnote">
                     Рабочая версия · {packageInfo.version}
                     <br />
-                    Комната и экономика — облако после входа.
+                    Комната и монеты — на этом устройстве.
                     <br />
-                    Музыка и плейлисты — облако после входа. Статистика — на
+                    Музыка, плейлисты и статистика — на
                     этом устройстве.
                   </p>
                 </section>

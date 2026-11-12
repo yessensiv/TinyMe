@@ -136,7 +136,7 @@ export function AdminPanel() {
     </header>
 
     <section className={styles.heading}>
-      <div><p className={styles.eyebrow}>TINYME / CREATIVE STUDIO</p><h1>Уют начинается<br/>с деталей<span>.</span></h1><p className={styles.intro}>Твои вещи, любимое звучание и маленькие идеи для большой комнаты.</p></div>
+      <div><p className={styles.eyebrow}>TINYME / CREATIVE STUDIO</p><h1>Мастерская TinyMe<span>.</span></h1><p className={styles.intro}>Твои вещи, любимое звучание и маленькие идеи для большой комнаты.</p></div>
       <div className={styles.studioSeal}><ShieldCheck/><span>Мастерская<small>Личное пространство для идей</small></span><span className={styles.demoBadge}><span/>На устройстве</span></div>
     </section>
 
@@ -144,9 +144,8 @@ export function AdminPanel() {
       {[{ label: "Вещи в каталоге", value: catalog.length, icon: "box", note: "Детали для уютной комнаты", tone: "peach" }, { label: "Музыкальная коллекция", value: tracks.length, icon: "music", note: "Звучание спокойных моментов", tone: "lavender" }, { label: "Категории", value: categories.length, icon: "grid", note: "Всё на своём месте", tone: "sage" }].map(stat => <article key={stat.label} className={styles.stat}><div><p>{stat.label}</p><strong>{String(stat.value).padStart(2, "0")}</strong><small>{stat.note}</small></div><span className={styles.statIcon} data-tone={stat.tone}><Icon name={stat.icon}/></span></article>)}
     </div>
 
-    <p role="status" className={styles.notice}>{message || "Нажмите «Новая вещь», заполните форму справа и сохраните. Данные хранятся в этом браузере."}</p>
-    <section className={styles.collectionManager} aria-label="Управление коллекциями">
-      <h2>Коллекции вещей</h2>
+    {message && <p role="status" className={styles.feedback}><Icon name="info"/>{message}</p>}
+    <details className={styles.collectionManager}><summary className={styles.collectionSummary}><span className={styles.collectionSummaryIcon}><Icon name="box"/></span><span><strong>Коллекции вещей</strong><small>Объединяй предметы в свои наборы</small></span><span className={styles.collectionCount}>{collections.length}</span><span className={styles.collectionExpand}>Управление <span aria-hidden="true">⌄</span></span></summary><div className={styles.collectionContent}>
       <form onSubmit={event => { event.preventDefault(); if (!collectionTitle.trim()) return; if (collections.some(c => c.id !== editingCollection && c.title.toLocaleLowerCase() === collectionTitle.trim().toLocaleLowerCase())) { setMessage("Коллекция с таким названием уже существует."); return; } const entry = {id: editingCollection ?? crypto.randomUUID(), title: collectionTitle.trim(), description: collectionDescription.trim()}; if (persist(catalog, editingCollection ? collections.map(c => c.id === editingCollection ? entry : c) : [...collections, entry])) { setEditingCollection(null); setCollectionTitle(""); setCollectionDescription(""); } }}>
         <label className={labelClass}>Название коллекции<input required maxLength={100} className={fieldClass} value={collectionTitle} onChange={event => setCollectionTitle(event.target.value)}/></label>
         <label className={labelClass}>Описание коллекции<input maxLength={500} className={fieldClass} value={collectionDescription} onChange={event => setCollectionDescription(event.target.value)}/></label>
@@ -155,7 +154,7 @@ export function AdminPanel() {
       </form>
       {collections.length === 0 && <p>Пока нет коллекций. Создайте первую и выберите её в редакторе вещи.</p>}
       {collections.map(c => <article key={c.id}><div><strong>{c.title}</strong><p>{c.description}</p><small>{catalog.filter(item => item.collectionId === c.id).length} вещей</small></div><button type="button" onClick={() => { setEditingCollection(c.id); setCollectionTitle(c.title); setCollectionDescription(c.description); }}>Изменить</button><button type="button" onClick={() => { if (!window.confirm(`Удалить коллекцию «${c.title}»? Вещи останутся в каталоге.`)) return; if (persist(catalog.map(item => item.collectionId === c.id ? {...item, collectionId: undefined} : item), collections.filter(group => group.id !== c.id))) { if (collectionFilter === c.id) setCollectionFilter(""); if (collectionId === c.id) setCollectionId(""); if (editingCollection === c.id) { setEditingCollection(null); setCollectionTitle(""); setCollectionDescription(""); } } }}>Удалить</button></article>)}
-    </section>
+    </div></details>
     <div className={styles.layout}>
       <section className={styles.collection} aria-label="Коллекция">
         <div className={styles.collectionHeader}>
