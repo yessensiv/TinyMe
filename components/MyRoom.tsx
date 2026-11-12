@@ -2,6 +2,7 @@
 import dynamic from "next/dynamic";
 import packageInfo from "../package.json";
 import ThemeSelector from "./ThemeSelector";
+import { useWorkshopProducts } from "@/lib/use-workshop-products";
 import LocalAccountPanel from "./LocalAccountPanel";
 import ProgressPanel from "./ProgressPanel";
 import { useProgress } from '@/lib/use-progress';
@@ -95,6 +96,8 @@ function mm(seconds: number) {
 }
 export default function MyRoom({initialView='room'}:{initialView?:'room'|'graph'}) {
   const r = useRoom();
+  const workshopCatalog = useWorkshopProducts();
+  const shopCatalog = useMemo(() => [...catalog,...workshopCatalog.products], [workshopCatalog.products]);
   const progress = useProgress();
   const growthActivities = useMemo(()=>skillActivities(progress.data),[progress.data]);
   const [growthTab,setGrowthTab]=useState<'skills'|'tasks'|'rewards'>('skills');
@@ -155,7 +158,7 @@ export default function MyRoom({initialView='room'}:{initialView?:'room'|'graph'
   const restPlayer=useRef<HTMLElement>(null);
   const shell=useRef<HTMLDivElement>(null);
   useEffect(()=>{if(!restMode || !restPlayer.current)return;const player=restPlayer.current;const measure=()=>shell.current?.style.setProperty('--rest-player-height',`${player.getBoundingClientRect().height}px`);measure();const observer=new ResizeObserver(measure);observer.observe(player);return()=>observer.disconnect();},[restMode]);
-  useEffect(()=>{try {const saved=JSON.parse(localStorage.getItem('myroom:shop-favorites:v1')??'[]');if(Array.isArray(saved))setFavorites(saved.filter((id):id is string=>typeof id==='string'&&catalog.some(p=>p.id===id)));} catch {} setFavoritesReady(true);},[]);
+  useEffect(()=>{try {const saved=JSON.parse(localStorage.getItem('myroom:shop-favorites:v1')??'[]');if(Array.isArray(saved))setFavorites(saved.filter((id):id is string=>typeof id==='string'&&(id.startsWith('workshop:') || catalog.some(p=>p.id===id))));} catch {} setFavoritesReady(true);},[]);
   const toggleFavorite=(id:string)=>{const next=favorites.includes(id)?favorites.filter(value=>value!==id):[...favorites,id];try{localStorage.setItem('myroom:shop-favorites:v1',JSON.stringify(next));setFavorites(next);}catch{r.setNotice('Не удалось сохранить избранное на устройстве.');}};
   useEffect(()=>{if(!restMode)return;const overflow=document.body.style.overflow;document.body.style.overflow='hidden';restExit.current?.focus();const escape=(e:KeyboardEvent)=>{if(e.key==='Escape'){setRainOpen(false);setRestMode(false);}};window.addEventListener('keydown',escape);return()=>{document.body.style.overflow=overflow;window.removeEventListener('keydown',escape);restTrigger.current?.focus();};},[restMode]);
   const lastMusicVolume=useRef(.3);
@@ -275,9 +278,9 @@ export default function MyRoom({initialView='room'}:{initialView?:'room'|'graph'
     document.addEventListener('keydown',escape);return()=>document.removeEventListener('keydown',escape);
   },[view]);
   const [period, setPeriod] = useState<StatisticsPeriod>("7");
-  const products=useMemo(()=>catalog.filter(p=>category==='Все'||(category==='Избранное'?favorites.includes(p.id):category==='Новинки'?!!p.collection:category==='Игровая коллекция'?p.collection==='gaming'&&(gameFilter==='Все игры'||p.game===gameFilter):p.category===category))
+  const products=useMemo(()=>shopCatalog.filter(p=>category==='Все'||(category==='Избранное'?favorites.includes(p.id):category==='Новинки'?!!p.collection:category==='Игровая коллекция'?p.collection==='gaming'&&(gameFilter==='Все игры'||p.game===gameFilter):p.category===category))
     .filter(p=>[p.name,p.category,p.game??''].join(' ').toLocaleLowerCase('ru').replaceAll('ё','е').includes(search.trim().toLocaleLowerCase('ru').replaceAll('ё','е')))
-    .sort((a,b)=>sort==='price'?a.price-b.price:a.name.localeCompare(b.name,'ru')),[category,gameFilter,sort,search,favorites]);
+    .sort((a,b)=>sort==='price'?a.price-b.price:a.name.localeCompare(b.name,'ru')),[category,gameFilter,sort,search,favorites,shopCatalog]);
   const ownedCounts = new Map<string,number>();
   for(const owned of r.room.items)ownedCounts.set(owned.productId,(ownedCounts.get(owned.productId)??0)+1);
   const inventoryCategories = [...new Set(r.room.items.map(i => productOf(i).category))].sort((a,b) => a.localeCompare(b,'ru'));
@@ -709,6 +712,7 @@ export default function MyRoom({initialView='room'}:{initialView?:'room'|'graph'
                 <div><strong>Любимые миры, своя комната.</strong><p>Фигурки — на полки и столики. Постеры — на стену.</p></div>
                 <div className="tabs" aria-label="Фильтр по игре">{['Все игры',...games].map(game=><button key={game} className={gameFilter===game?'selected':''} aria-pressed={gameFilter===game} onClick={()=>setGameFilter(game)}>{game}</button>)}</div>
               </section>}
+              {workshopCatalog.error && <p role="alert">{workshopCatalog.error}</p>}
               {products.length===0&&<div className="search-empty"><Search size={24} aria-hidden="true"/><h2>{category==='Избранное' && !favorites.length?'Здесь будут любимые вещи':'Пока ничего не нашлось'}</h2><p>{category==='Избранное' && !favorites.length?'Нажми на сердечко у вещи в магазине — она появится здесь.':'Попробуй другое название или сбрось фильтры.'}</p><button className="button secondary" onClick={()=>{setSearch('');setCategory('Все');setGameFilter('Все игры');}}>Показать все вещи</button></div>}
               <div className="product-grid">
                 {products.map((p) => (

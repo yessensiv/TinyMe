@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { ArrowUpRight, X } from "lucide-react";
 import RoomDock from "@/components/RoomDock";
+import { workshopCatalogEvent } from "@/domain/workshop-catalog";
 import Image from "next/image";
 import styles from "./admin-panel.module.css";
 import { Coin, Icon } from "@/components/ui/icon";
@@ -59,6 +60,7 @@ export function AdminPanel() {
       const serialized = JSON.stringify({version: 1, items, collections: groups});
       parseWorkshop(serialized);
       localStorage.setItem(storageKey, serialized);
+      window.dispatchEvent(new Event(workshopCatalogEvent));
       setCatalog(items); setCollections(groups); setMessage("Сохранено на этом устройстве."); return true;
     } catch { setMessage("Не удалось сохранить. Возможно, память браузера заполнена. Удалите часть изображений и повторите."); return false; }
   }
@@ -207,7 +209,7 @@ export function AdminPanel() {
         </form>
       </dialog>
     </div>
-    <footer className={styles.notice}><Icon name="info"/><p><strong>Ваша локальная мастерская.</strong> Вещи и коллекции сохраняются в этом браузере. Каталог комнаты управляется отдельно; публикация в магазин комнаты не подключена.</p><span>TINY ME ? STUDIO</span></footer>
+    <footer className={styles.notice}><Icon name="info"/><p><strong>Ваша локальная мастерская.</strong> Вещи и коллекции сохраняются в этом браузере. Вещи с отметкой «Доступна в магазине» видны пользователям этого браузера. После покупки их можно разместить в комнате.</p><span>TINY ME ? STUDIO</span></footer>
     <RoomDock active="admin"/>
   </main>;
 }

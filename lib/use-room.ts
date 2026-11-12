@@ -15,6 +15,7 @@ import {
 import { supabase, rpc, errorMessage } from "./supabase";
 import { BackgroundSession, type ActivitySnapshot } from "./background-session";
 import { furnishStudio } from '@/domain/studio-layout';
+import { readWorkshopProducts, buyWorkshopProduct } from '@/domain/workshop-catalog';
 export function useRoom() {
   const [room, setRoom] = useState<RoomData>(initialRoom);
   const [user, setUser] = useState<User | null>(null);
@@ -277,7 +278,11 @@ export function useRoom() {
         const s = state.current;
         let next = { ...s, revision: s.revision + 1, items: [...s.items] };
         if (kind === "purchase") {
-          const p = catalog.find((p) => p.id === payload.productId)!;
+          const p = [...catalog, ...readWorkshopProducts(localStorage)].find((p) => p.id === payload.productId);
+          if (!p) throw Error('Вещь больше не доступна в магазине');
+          if (p.id.startsWith('workshop:')) {
+            next = buyWorkshopProduct(s, p, crypto.randomUUID());
+          } else {
           if (s.balance < p.price) throw Error("INSUFFICIENT_FUNDS");
           next = {
             ...next,
@@ -294,6 +299,7 @@ export function useRoom() {
               },
             ],
           };
+          }
         } else if (kind === "appearance") {
           if (!validAppearance(payload.appearance)) throw Error("Выберите допустимые цвета");
           next = { ...next, appearance: payload.appearance };
