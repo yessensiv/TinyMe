@@ -36,7 +36,8 @@ export default function AccountPanel({user, recovery, onRecovered, balance, item
   });
   const changeMode=(next:Mode)=>{setMode(next);setPassword('');setConfirm('');setFeedback(null);};
   const run=async(action:()=>Promise<string>)=>{
-    if(locked.current || !supabase)return;
+    if(locked.current)return;
+    if(!supabase){setFeedback({error:true,text:'Авторизация не настроена. Для локального запуска подключите Supabase и перезапустите сайт.'});return;}
     locked.current=true;setBusy(true);setFeedback(null);
     try{setFeedback({error:false,text:await action()});}
     catch(error){setFeedback({error:true,text:authError(error)});}
@@ -92,10 +93,10 @@ export default function AccountPanel({user, recovery, onRecovered, balance, item
       {!user && !recovery && <div className="account-tabs" role="group" aria-label="Действие с аккаунтом"><button type="button" disabled={busy} aria-pressed={mode!=='register'} onClick={()=>changeMode('login')}>Вход</button><button type="button" disabled={busy} aria-pressed={mode==='register'} onClick={()=>changeMode('register')}>Регистрация</button></div>}
       <h2>{recovery?'Новый пароль':user?'Твой профиль':mode==='register'?'Начнём знакомство':mode==='reset'?'Вернём доступ':mode==='magic'?'Войти без пароля':'Рады видеть тебя'}</h2>
       <p>{recovery?'Придумай новый пароль для своего аккаунта.':user?'Имя и аватар видны в твоём профиле.':mode==='register'?'Почта, пароль и немного тебя.':mode==='reset'||mode==='magic'?'Отправим письмо со ссылкой на твою почту.':'Войди, чтобы открыть свою облачную комнату.'}</p>
-      {!supabase && <p role="status" className="account-feedback">Вход пока не настроен. Комната доступна в гостевом режиме.</p>}
+      {!supabase && <p role="status" className="account-feedback">Авторизация не подключена. Поля можно заполнить, но для входа и регистрации нужен настроенный Supabase. Пока доступна гостевая комната.</p>}
       {!user && !recovery && googleReady && <><button type="button" className="button secondary account-google" disabled={busy} onClick={()=>void googleLogin()}><span aria-hidden="true">G</span>Продолжить с Google</button><div className="account-divider">или по логину / почте</div></>}
       <form onSubmit={e=>{e.preventDefault();void submit();}} aria-busy={busy}>
-        <fieldset disabled={busy || !supabase}>
+        <fieldset disabled={busy}>
           {!recovery && (user||mode==='register') && <><label htmlFor="account-name">Как тебя называть</label><input id="account-name" autoComplete="nickname" value={name} onChange={e=>setName(e.target.value)} required maxLength={40} placeholder="Твоё имя"/><div className="account-colors" role="group" aria-label="Цвет аватара">{avatarColors.map((c,i)=><button key={c} type="button" style={{background:c}} aria-label={`Цвет аватара ${i+1}`} aria-pressed={color===c} onClick={()=>setColor(c)}>{color===c&&<Check size={16}/>}</button>)}</div></>}
           {!user && !recovery && mode==='register' && <><label htmlFor="account-username">Логин</label><input id="account-username" autoComplete="username" value={username} onChange={e=>setUsername(e.target.value)} required minLength={3} maxLength={30} pattern="[a-zA-Z0-9_]{3,30}" aria-describedby="username-help"/><small id="username-help">3–30 латинских букв, цифр или _. Регистр не важен.</small></>}
           {!recovery && <><label htmlFor="account-email">{!user&&mode==='login'?'Логин или электронная почта':'Электронная почта'}</label><input id="account-email" type={!user&&mode==='login'?'text':'email'} autoComplete={!user&&mode==='login'?'username':'email'} required maxLength={254} value={user?.email??email} readOnly={!!user} onChange={e=>setEmail(e.target.value)} placeholder={!user&&mode==='login'?'your_login или you@example.com':'you@example.com'}/>{user&&<small>Почта используется для входа и восстановления доступа.</small>}</>}

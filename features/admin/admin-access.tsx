@@ -69,7 +69,7 @@ export function AdminAccess() {
     {access === 'allowed' && <>
       <nav className="my-6 flex gap-4" aria-label="Администрирование">
         <button className="button secondary" onClick={() => setCollection(false)} aria-pressed={!collection}>Пользователи</button>
-        <button className="button secondary" onClick={() => setCollection(true)} aria-pressed={collection}>Макет коллекций</button>
+        <button className="button secondary" onClick={() => setCollection(true)} aria-pressed={collection}>Мастерская коллекций</button>
         <button className="button secondary" disabled={busy} onClick={async () => {
           setBusy(true);
           try {

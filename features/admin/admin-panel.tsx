@@ -6,15 +6,14 @@ import Image from "next/image";
 import styles from "./admin-panel.module.css";
 import { Coin, Icon } from "@/components/ui/icon";
 import { PixelItem } from "@/components/ui/pixel-item";
-import { catalog as initialCatalog, categories, type CatalogItem, type ItemKind } from "@/config/demo";
+import { catalog as initialCatalog, categories, type ItemKind } from "@/config/demo";
+import { parseWorkshop, type WorkshopItem, type WorkshopCollection as Collection } from '@/domain/workshop';
 
 const tracks = [
   { id: "quiet-morning", title: "Тихое утро", artist: "TinyMe Sounds", genre: "Lo-fi", duration: "3:24", color: "#e8eedf" },
   { id: "rainy-window", title: "Дождь за окном", artist: "TinyMe Sounds", genre: "Эмбиент", duration: "5:12", color: "#e4ebef" },
   { id: "warm-light", title: "Тёплый свет", artist: "TinyMe Sounds", genre: "Пиано", duration: "2:48", color: "#f6efdf" },
 ];
-type WorkshopItem = CatalogItem & { description?: string; images?: string[]; collectionId?: string };
-type Collection = { id: string; title: string; description: string };
 const storageKey = "tinyme:workshop:v1";
 type Track = (typeof tracks)[number];
 type Section = "items" | "music";
@@ -45,8 +44,7 @@ export function AdminPanel() {
     try {
       const raw = localStorage.getItem(storageKey);
       if (raw) {
-        const data = JSON.parse(raw);
-        if (data.version !== 1 || !Array.isArray(data.items) || !Array.isArray(data.collections) || !data.items.every((item: WorkshopItem) => item && typeof item.id === "string" && typeof item.title === "string" && typeof item.category === "string" && illustrations.some(kind => kind.value === item.illustration)) || !data.collections.every((entry: Collection) => entry && typeof entry.id === "string" && typeof entry.title === "string")) throw new Error();
+        const data = parseWorkshop(raw);
         setCatalog(data.items); setCollections(data.collections);
       }
     } catch { setMessage("Не удалось прочитать мастерскую. Сохранение заменит повреждённые данные."); }
@@ -56,7 +54,9 @@ export function AdminPanel() {
   }, []);
   function persist(items: WorkshopItem[], groups: Collection[]) {
     try {
-      localStorage.setItem(storageKey, JSON.stringify({version: 1, items, collections: groups}));
+      const serialized = JSON.stringify({version: 1, items, collections: groups});
+      parseWorkshop(serialized);
+      localStorage.setItem(storageKey, serialized);
       setCatalog(items); setCollections(groups); setMessage("Сохранено на этом устройстве."); return true;
     } catch { setMessage("Не удалось сохранить. Возможно, память браузера заполнена. Удалите часть изображений и повторите."); return false; }
   }
@@ -130,7 +130,7 @@ export function AdminPanel() {
   return <main className={styles.page}>
     <header className={styles.topbar}>
       <Link href="/" className={styles.brand}><span className={styles.brandMark}><Icon name="room"/></span>tiny me<span className={styles.brandDot}>.</span><span className={styles.divider}/><span className={styles.workspace}>Мастерская</span></Link>
-      <Link href="/" className={styles.back}>Вернуться в комнату <Icon name="arrow"/></Link>
+      <Link href="/room" className={styles.back}>Вернуться в комнату <Icon name="arrow"/></Link>
     </header>
 
     <section className={styles.heading}>
@@ -204,8 +204,6 @@ export function AdminPanel() {
         </form>
       </aside>
     </div>
-    <div className="mt-6 flex items-start gap-3 rounded-xl bg-sage/60 p-4 text-xs leading-5 text-muted"><Icon name="info" className="mt-0.5 size-5 shrink-0 text-forest"/><p>Редактор коллекций остаётся макетом без публикации. Управление ролями работает в разделе «Пользователи».</p></div>
-  </>;
     <footer className={styles.notice}><Icon name="info"/><p><strong>Ваша локальная мастерская.</strong> Вещи и коллекции сохраняются в этом браузере. Каталог комнаты управляется отдельно; публикация в магазин комнаты не подключена.</p><span>TINY ME ? STUDIO</span></footer>
   </main>;
 }

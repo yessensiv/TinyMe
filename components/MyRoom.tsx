@@ -280,6 +280,7 @@ export default function MyRoom({initialView='room'}:{initialView?:'room'|'graph'
       setView('profile');
       setAccountRecovery(url.searchParams.get('account')==='recovery');
       url.searchParams.delete('account');
+      url.searchParams.set('view','profile');
       window.history.replaceState(null,'',url.pathname+url.search+url.hash);
     }
     const subscription=supabase?.auth.onAuthStateChange(event=>{
