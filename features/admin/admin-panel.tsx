@@ -204,6 +204,8 @@ export function AdminPanel() {
         </form>
       </aside>
     </div>
+    <div className="mt-6 flex items-start gap-3 rounded-xl bg-sage/60 p-4 text-xs leading-5 text-muted"><Icon name="info" className="mt-0.5 size-5 shrink-0 text-forest"/><p>Редактор коллекций остаётся макетом без публикации. Управление ролями работает в разделе «Пользователи».</p></div>
+  </>;
     <footer className={styles.notice}><Icon name="info"/><p><strong>Ваша локальная мастерская.</strong> Вещи и коллекции сохраняются в этом браузере. Каталог комнаты управляется отдельно; публикация в магазин комнаты не подключена.</p><span>TINY ME ? STUDIO</span></footer>
   </main>;
 }

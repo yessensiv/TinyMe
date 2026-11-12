@@ -384,6 +384,7 @@ export default function MyRoom({initialView='room'}:{initialView?:'room'|'graph'
         activeMs={r.room.activeMs} running={r.timerRunning}
         status={r.status}
         cloud={!!r.user}
+        isAdmin={r.role==='admin'}
       />
       <div className="immersive-room">
 

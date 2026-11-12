@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
-import { createElement, type ReactNode } from "react";
+import type { CSSProperties } from "react";
 import { EntryTransition } from "@/features/intro/entry-transition";
-import { Inter, Cormorant_Garamond } from "next/font/google";
+import "@fontsource-variable/inter/index.css";
+import "@fontsource-variable/cormorant-garamond/index.css";
 import "./globals.css";
 import "./studio.css";
 import "./cozy.css";
@@ -38,7 +39,10 @@ export default function Layout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="ru" suppressHydrationWarning className={`${inter.variable} ${cormorant.variable}`}>
+    <html lang="ru" suppressHydrationWarning style={{
+      '--font-inter': '"Inter Variable", sans-serif',
+      '--font-cormorant': '"Cormorant Garamond Variable", serif',
+    } as CSSProperties}>
       <body>
         <script dangerouslySetInnerHTML={{ __html: 'try{document.documentElement.dataset.theme=localStorage.getItem("tinyme:theme")==="light"?"light":"dark"}catch{document.documentElement.dataset.theme="dark"}' }} />
         <EntryTransition>{children}</EntryTransition>
