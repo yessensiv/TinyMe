@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { ShieldCheck, ArrowUpRight } from "lucide-react";
+import { ArrowUpRight, X } from "lucide-react";
 import RoomDock from "@/components/RoomDock";
 import Image from "next/image";
 import styles from "./admin-panel.module.css";
@@ -69,7 +69,7 @@ export function AdminPanel() {
     if (!title.trim()) { setMessage("Укажите название вещи."); titleInput.current?.focus(); return; }
     const item: WorkshopItem = { id: editingId ?? crypto.randomUUID(), title: title.trim(), description: String(data.get("description") ?? "").trim(), category: String(data.get("category")), illustration: kind, color, width: Number(data.get("width")), depth: Number(data.get("depth")), price: Number(data.get("price")), purchasable: data.has("purchasable"), images, collectionId: collectionId || undefined };
     if (![item.width, item.depth, item.price].every(Number.isInteger) || item.width < 1 || item.width > 12 || item.depth < 1 || item.depth > 8 || item.price < 0 || item.price > 1000000) { setMessage("Проверьте размеры и цену."); return; }
-    if (persist(editingId ? catalog.map(old => old.id === editingId ? item : old) : [...catalog, item], collections)) { resetEditor(); setQuery(""); setCategory("Все категории"); setCollectionFilter(""); }
+    if (persist(editingId ? catalog.map(old => old.id === editingId ? item : old) : [...catalog, item], collections)) { resetEditor(); editorDialog.current?.close(); setQuery(""); setCategory("Все категории"); setCollectionFilter(""); }
   }
   async function upload(files: FileList | null) {
     if (!files?.length || uploading) return;
@@ -93,6 +93,8 @@ export function AdminPanel() {
   const [color, setColor] = useState("#edf1e6");
   const [fileName, setFileName] = useState("");
   const titleInput = useRef<HTMLInputElement>(null);
+  const editorDialog = useRef<HTMLDialogElement>(null);
+  function openEditor() { editorDialog.current?.showModal(); requestAnimationFrame(() => titleInput.current?.focus()); }
   const needle = query.trim().toLocaleLowerCase("ru");
   const items = catalog.filter(item => (!collectionFilter || item.collectionId === collectionFilter) && item.title.toLocaleLowerCase("ru").includes(needle) && (category === "Все категории" || item.category === category));
   const music = tracks.filter(track => `${track.title} ${track.artist}`.toLocaleLowerCase("ru").includes(needle));
@@ -126,7 +128,7 @@ export function AdminPanel() {
     if ("illustration" in entry) setKind(entry.illustration);
     setFileName("");
     setEditorKey(key => key + 1);
-    requestAnimationFrame(() => titleInput.current?.focus());
+    openEditor();
   }
 
   return <main className={styles.page}>
@@ -136,8 +138,7 @@ export function AdminPanel() {
     </header>
 
     <section className={styles.heading}>
-      <div><p className={styles.eyebrow}>TINYME / CREATIVE STUDIO</p><h1>Мастерская TinyMe<span>.</span></h1><p className={styles.intro}>Твои вещи, любимое звучание и маленькие идеи для большой комнаты.</p></div>
-      <div className={styles.studioSeal}><ShieldCheck/><span>Мастерская<small>Личное пространство для идей</small></span><span className={styles.demoBadge}><span/>На устройстве</span></div>
+      <div><h1>Мастерская</h1><p className={styles.intro}>Управление вещами и коллекциями</p></div>
     </section>
 
     <div className={styles.stats}>
@@ -168,7 +169,7 @@ export function AdminPanel() {
           <label className={styles.search}><Icon name="search"/><span className={styles.srOnly}>Поиск по коллекции</span><input type="search" value={query} onChange={event => setQuery(event.target.value)} placeholder={section === "items" ? "Найти вещь в коллекции…" : "Название или исполнитель…"}/></label>
           {section === "items" && <label><span className={styles.srOnly}>Категория вещей</span><select value={category} onChange={event => setCategory(event.target.value)} className={styles.filter}><option>Все категории</option>{categories.map(value => <option key={value}>{value}</option>)}</select></label>}
         </div>
-        <div className={styles.results}><p>{section === "items" ? "Каталог вещей" : "Музыкальная полка"}<span>{section === "items" ? items.length : music.length}</span></p><button type="button" onClick={() => { resetEditor(); requestAnimationFrame(() => titleInput.current?.focus()); }} className={styles.primary}><Icon name="plus"/>{section === "items" ? "Новая вещь" : "Новый трек"}</button></div>
+        <div className={styles.results}><p>{section === "items" ? "Каталог вещей" : "Музыкальная полка"}<span>{section === "items" ? items.length : music.length}</span></p><button type="button" onClick={() => { resetEditor(); openEditor(); }} className={styles.primary}><Icon name="plus"/>{section === "items" ? "Новая вещь" : "Новый трек"}</button></div>
         {section === "items" ? <div className={styles.cards}>{items.map(item => <article key={item.id} className={styles.item} data-selected={editingId === item.id}>
           <div className={styles.artwork} style={{ backgroundColor: item.color }}><span className={styles.category}>{item.category}</span>{item.images?.[0] ? <Image unoptimized width={120} height={120} className={styles.customImage} src={item.images[0]} alt={item.title}/> : <PixelItem kind={item.illustration}/>}<span className={styles.itemNumber}>#{String(catalog.indexOf(item) + 1).padStart(3, "0")}</span></div>
           <div className={styles.itemBody}><h2>{item.title}</h2><p>{item.description}</p><div className={styles.itemMeta}><span>{item.width} × {item.depth} клетки</span><span className={styles.price}>{item.purchasable ? <><Coin/>{item.price}</> : "Стартовый набор"}</span></div><button type="button" onClick={() => edit(item)} className={styles.edit}><Icon name="edit"/>Редактировать<span className={styles.srOnly}>: {item.title}</span><Icon name="arrow"/></button></div>
@@ -180,9 +181,10 @@ export function AdminPanel() {
         {(section === "items" ? items.length : music.length) === 0 && <div className={styles.empty}><Icon name="search"/><h2>Ничего не нашлось</h2><p>Попробуй другое название или сбрось фильтры.</p><button type="button" className={styles.edit} onClick={() => { setQuery(""); setCategory("Все категории"); setCollectionFilter(""); }}>Сбросить поиск</button></div>}
         <p className={styles.collectionFooter}><Icon name="leaf"/>Большой уют начинается с маленьких деталей.</p>
       </section>
-      <aside className={styles.editor} aria-labelledby="editor-title">
-        <div className={styles.editorHeader}><span className={styles.editorIcon}><Icon name={editingId ? "edit" : "plus"}/></span><div><p className={styles.eyebrow}>РЕДАКТОР КОЛЛЕКЦИИ</p><h2 id="editor-title">{editingId ? "Редактирование" : section === "items" ? "Новая вещь" : "Новый трек"}</h2></div><span className={styles.draft}>Черновик</span></div>
+      <dialog ref={editorDialog} className={styles.editor} aria-labelledby="editor-title">
+        <div className={styles.editorHeader}><span className={styles.editorIcon}><Icon name={editingId ? "edit" : "plus"}/></span><div><p className={styles.eyebrow}>РЕДАКТОР КОЛЛЕКЦИИ</p><h2 id="editor-title">{editingId ? "Редактирование" : section === "items" ? "Новая вещь" : "Новый трек"}</h2></div><button type="button" className={styles.closeEditor} aria-label="Закрыть редактор" onClick={() => editorDialog.current?.close()}><X size={20}/></button></div>
         <form key={`${section}-${editorKey}`} onSubmit={saveItem} className={styles.form}>
+          {message && <p role="status" className={styles.editorMessage}>{message}</p>}
           <div className={styles.preview} style={{ backgroundColor: color }}><span>ПРЕДПРОСМОТР</span>{section === "items" ? (images[0] ? <Image unoptimized width={120} height={120} className={styles.customImage} src={images[0]} alt={title || "Предпросмотр вещи"}/> : <PixelItem kind={kind}/>) : <Icon name="music"/>}<p>{title.trim() || (section === "items" ? "Твоя новая деталь уюта" : "Звучание твоей комнаты")}</p></div>
           <label className={labelClass}>Название<input required ref={titleInput} value={title} onChange={event => setTitle(event.target.value)} maxLength={100} placeholder={section === "items" ? "Например, маленький фикус" : "Например, вечер в комнате"} className={fieldClass}/></label>
           {section === "items" ? <>
@@ -203,7 +205,7 @@ export function AdminPanel() {
           {section === "items" && images.map((src, index) => <div key={index} className={styles.imageRow}><Image unoptimized width={120} height={120} src={src} alt={`Изображение ${index + 1}`} className={styles.customImage}/><button type="button" onClick={() => setImages(old => old.filter((_, i) => i !== index))}>Удалить изображение {index + 1}</button></div>)}
           <div className={styles.saveArea}><button type="submit" disabled={!loaded || uploading || section !== "items"} aria-describedby="save-note" className={styles.save}><Icon name="plus"/>{editingId ? "Сохранить изменения" : section === "items" ? "Добавить в коллекцию" : "Добавить трек"}</button><p id="save-note">{section === "items" ? "Сохранение на устройстве. Первая картинка — обложка вещи." : "Музыкальный раздел остаётся демонстрационным."}</p><button type="button" onClick={resetEditor} className={styles.reset}>Сбросить форму</button></div>
         </form>
-      </aside>
+      </dialog>
     </div>
     <footer className={styles.notice}><Icon name="info"/><p><strong>Ваша локальная мастерская.</strong> Вещи и коллекции сохраняются в этом браузере. Каталог комнаты управляется отдельно; публикация в магазин комнаты не подключена.</p><span>TINY ME ? STUDIO</span></footer>
     <RoomDock active="admin"/>
