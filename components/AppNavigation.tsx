@@ -1,28 +1,13 @@
 "use client";
-import { useRouter } from "next/navigation";
+import RoomDock from "./RoomDock";
 import {
   UserRound,
-  Home,
-  Armchair,
-  Package,
-  Music2,
-  ChartNoAxesCombined,
   Settings,
   Coins,
   Cloud,
   HardDrive,
-  Sprout,
-  ShieldCheck,
 } from "lucide-react";
 import { useSessionClock } from "@/lib/use-session-clock";
-const links = [
-  { id: "room", label: "Комната", icon: Home },
-  { id: "progress", label: "Развитие", icon: Sprout },
-  { id: "shop", label: "Магазин", icon: Armchair },
-  { id: "inventory", label: "Мои вещи", icon: Package },
-  { id: "music", label: "Музыка", icon: Music2 },
-  { id: "stats", label: "Статистика", icon: ChartNoAxesCombined },
-];
 export default function AppNavigation({
   view,
   onNavigate,
@@ -37,7 +22,7 @@ export default function AppNavigation({
   cloud: boolean; activeMs: number; running: boolean;
   isAdmin?: boolean;
 }) {
-  const router = useRouter();
+
   const displayMs=useSessionClock(activeMs,running,cloud);
   return (
     <header className="studio-header">
@@ -58,30 +43,7 @@ export default function AppNavigation({
           tiny me<span className="brand-period">.</span>
         </span>
       </a>
-      <nav className="studio-navigation" aria-label="Основное меню">
-        {links.map((link) => (
-          <button
-            key={link.id}
-            aria-label={link.label}
-            className={view === link.id ? "active" : ""}
-            aria-current={view === link.id ? "page" : undefined}
-            onClick={() => onNavigate(link.id)}
-          >
-            <link.icon size={16} aria-hidden="true"  strokeWidth={1.75}/>
-            <span className="dock-label">{link.label}</span>
-            <span className="dock-tooltip" aria-hidden="true">{link.label}</span>
-          </button>
-        ))}
-        {isAdmin && <button
-          type="button"
-          aria-label="Админ-панель"
-          onClick={() => router.push("/admin")}
-        >
-          <ShieldCheck size={16} aria-hidden="true" strokeWidth={1.75}/>
-          <span className="dock-label">Админ-панель</span>
-          <span className="dock-tooltip" aria-hidden="true">Админ-панель</span>
-        </button>}
-      </nav>
+      <RoomDock active={view} onNavigate={onNavigate} showAdmin={isAdmin}/>
       <div className="studio-account">
         <span className="studio-sync" title={status} aria-label={status}>
           {cloud ? <Cloud size={16}  strokeWidth={1.75}/> : <HardDrive size={16}  strokeWidth={1.75}/>}

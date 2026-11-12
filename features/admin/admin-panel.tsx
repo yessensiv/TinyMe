@@ -2,6 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { ShieldCheck, ArrowUpRight } from "lucide-react";
+import RoomDock from "@/components/RoomDock";
 import Image from "next/image";
 import styles from "./admin-panel.module.css";
 import { Coin, Icon } from "@/components/ui/icon";
@@ -130,12 +132,12 @@ export function AdminPanel() {
   return <main className={styles.page}>
     <header className={styles.topbar}>
       <Link href="/" className={styles.brand}><span className={styles.brandMark}><Icon name="room"/></span>tiny me<span className={styles.brandDot}>.</span><span className={styles.divider}/><span className={styles.workspace}>Мастерская</span></Link>
-      <Link href="/room" className={styles.back}>Вернуться в комнату <Icon name="arrow"/></Link>
+      <Link href="/room" className={styles.back}>В комнату <ArrowUpRight/></Link>
     </header>
 
     <section className={styles.heading}>
-      <div><p className={styles.eyebrow}>ЗА КУЛИСАМИ УЮТА</p><h1>Мастерская TinyMe<span>.</span></h1><p className={styles.intro}>Место, где появляются новые вещи и звучание твоей комнаты.</p></div>
-      <span className={styles.demoBadge}><span/>Локальная мастерская</span>
+      <div><p className={styles.eyebrow}>TINYME / CREATIVE STUDIO</p><h1>Уют начинается<br/>с деталей<span>.</span></h1><p className={styles.intro}>Твои вещи, любимое звучание и маленькие идеи для большой комнаты.</p></div>
+      <div className={styles.studioSeal}><ShieldCheck/><span>Мастерская<small>Личное пространство для идей</small></span><span className={styles.demoBadge}><span/>На устройстве</span></div>
     </section>
 
     <div className={styles.stats}>
@@ -205,5 +207,6 @@ export function AdminPanel() {
       </aside>
     </div>
     <footer className={styles.notice}><Icon name="info"/><p><strong>Ваша локальная мастерская.</strong> Вещи и коллекции сохраняются в этом браузере. Каталог комнаты управляется отдельно; публикация в магазин комнаты не подключена.</p><span>TINY ME ? STUDIO</span></footer>
+    <RoomDock active="admin"/>
   </main>;
 }
