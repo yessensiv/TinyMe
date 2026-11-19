@@ -58,3 +58,7 @@
 .likers li { padding: 5px 0; }
 .likers li > span { display: inline-flex; align-items: center; gap: 8px; color: var(--social-muted); }
 .profileEmpty { padding: 16px 20px; color: var(--social-muted); border-left: 2px solid var(--social-line); }
+.profileActions { display: flex; gap: 8px; flex-wrap: wrap; }
+@media (max-width: 760px) {
+  .profileActions { flex-basis: 100%; }
+}

@@ -7,7 +7,7 @@ import { ArrowLeft, ArrowUpRight, Heart, Star, MessageCircle, Layers, Plus, Sear
 import FurniturePreview from '@/components/FurniturePreview';
 import { filterProducts, ratingFor, type Review, type Selection, type CommunityState } from '@/domain/community';
 import { useCommunity } from '@/lib/use-community';
-import { localSignOut } from '@/lib/use-local-account';
+import SignOutButton from '@/components/SignOutButton';
 
 import styles from './community.module.css';
 import item from './product.module.css';
@@ -59,7 +59,6 @@ export default function CommunityApp({view='catalog',id}:{view?:View;id?:string}
       {view==='community'&&<CommunityPage model={model}/>}
       {view==='profile'&&<ProfilePage key={id} model={model} id={id??''}/>}
       {view==='selection'&&<SelectionPage model={model} id={id??''}/>}
-      {view==='profile'&&model.actor&&id===model.actor.id&&model.cloud&&<button type="button" className={styles.quiet} onClick={()=>void localSignOut().catch(()=>window.alert("Не удалось выйти. Попробуйте снова."))}>Выйти из TinyMe</button>}
     </>}
   </main>;
 }
@@ -166,7 +165,7 @@ function ProfilePage({model,id}:{model:Model;id:string}){
   const [edit,setEdit]=useState(false),[selection,setSelection]=useState<Selection|null|undefined>(undefined);
   if(!p&&!own)return <Empty title="Профиль недоступен" text="Этот пользователь ещё не опубликовал свой профиль."/>;
   const selections=model.state.selections.filter(c=>c.userId===id&&(c.public||own));
-  return <><section className={styles.profileHero}><span className={styles.bigAvatar}>{(p?.name??model.actor?.name??'Т').slice(0,1)}</span><div><span className={styles.eyebrow}>{own?'МОЙ ПРОФИЛЬ':'ПРОФИЛЬ TINYME'}</span><h1>{p?.name??model.actor?.name}</h1>{p?.bio&&<p className={styles.bodyText}>{p.bio}</p>}<small>Отзывы · {model.state.reviews.filter(r=>r.userId===id).length}　 Подборки · {selections.length}{own&&!p?.public?' · профиль скрыт':''}</small></div>{own?<button className={styles.quiet} onClick={()=>setEdit(v=>!v)}><Pencil size={16}/>Редактировать профиль</button>:<ShareButton/>}</section>
+  return <><section className={styles.profileHero}><span className={styles.bigAvatar}>{(p?.name??model.actor?.name??'Т').slice(0,1)}</span><div><span className={styles.eyebrow}>{own?'МОЙ ПРОФИЛЬ':'ПРОФИЛЬ TINYME'}</span><h1>{p?.name??model.actor?.name}</h1>{p?.bio&&<p className={styles.bodyText}>{p.bio}</p>}<small>Отзывы · {model.state.reviews.filter(r=>r.userId===id).length}　 Подборки · {selections.length}{own&&!p?.public?' · профиль скрыт':''}</small></div>{own?<aside className={styles.profileActions}><button className={styles.quiet} onClick={()=>setEdit(v=>!v)}><Pencil size={16}/>Редактировать профиль</button><SignOutButton className={styles.quiet}/></aside>:<ShareButton/>}</section>
     {own&&edit&&<ProfileForm key={`${p?.name}:${p?.bio}:${p?.public}`} model={model} onSaved={()=>setEdit(false)}/>}
     <section className={styles.section}><div className={styles.sectionTitle}><h2>{own?'Твои подборки':'Подборки'}</h2>{own&&<button className={styles.primary} onClick={()=>setSelection(null)}><Plus size={16}/>Новая подборка</button>}</div>
       {own&&selection!==undefined&&<SelectionEditor key={selection?.id??'new'} model={model} existing={selection??undefined} onDone={()=>setSelection(undefined)}/>}
