@@ -15,7 +15,7 @@ export default function LocalAuthForm({ register = false, next }: { register?: b
 function OfflineAuthForm({register, next}: {register: boolean; next?: string}) {
   const router = useRouter();
   const [name, setName] = useState(''), [email, setEmail] = useState(''), [password, setPassword] = useState(''), [confirm, setConfirm] = useState('');
-  const [role, setRole] = useState<LocalRole>('user'), [busy, setBusy] = useState(false), [error, setError] = useState('');
+  const [role, setRole] = useState<LocalRole>(register && next === '/admin' ? 'admin' : 'user'), [busy, setBusy] = useState(false), [error, setError] = useState('');
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault(); if (busy) return; setError('');
     if (register && password !== confirm) { setError('Пароли не совпадают.'); return; }
@@ -29,7 +29,7 @@ function OfflineAuthForm({register, next}: {register: boolean; next?: string}) {
       window.dispatchEvent(new Event(localAuthEvent));
       setPassword(''); setConfirm('');
       const fallback = account.role === 'admin' ? '/admin' : '/room';
-      router.replace(next === '/admin' && account.role !== 'admin' ? fallback : next ?? fallback);
+      router.replace(next?.startsWith('/admin') && account.role !== 'admin' ? fallback : next ?? fallback);
     } catch (e) { setError(e instanceof DOMException ? 'Не удалось сохранить вход. Разреши хранение данных сайта в браузере.' : e instanceof Error ? e.message : 'Не удалось войти. Попробуй ещё раз.'); }
     finally { setBusy(false); }
   }

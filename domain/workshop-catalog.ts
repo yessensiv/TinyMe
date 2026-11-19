@@ -24,9 +24,14 @@ export function readWorkshopShowcase(storage: Pick<Storage, 'getItem'>): Worksho
     collectionTitle: collections.find(collection => collection.id === item.collectionId)?.title,
   }));
 }
+export function roomProductSnapshot(p:Product):Product {
+  const {id,name,category,price,w,h,kind,color,surface,image,game,collection,decorHeight}=p;
+  return {id,name,category,price,w,h,kind,color,surface,
+    ...(image?{image}:{}),...(game?{game}:{}),...(collection?{collection}:{}),...(decorHeight===undefined?{}:{decorHeight})};
+}
 export function buyWorkshopProduct(room: RoomData, product: Product, id: string): RoomData {
   if (!product.id.startsWith('workshop:')) throw Error('Неизвестная вещь мастерской');
   if (room.balance < product.price) throw Error('INSUFFICIENT_FUNDS');
   return { ...room,revision:room.revision+1,balance:room.balance-product.price,
-    items:[...room.items,{id,productId:product.id,workshopProduct:{...product},x:null,y:null,rotation:0,on:false}] };
+    items:[...room.items,{id,productId:product.id,workshopProduct:roomProductSnapshot(product),x:null,y:null,rotation:0,on:false}] };
 }

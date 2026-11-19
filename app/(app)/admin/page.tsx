@@ -1,9 +1,7 @@
-import type { Metadata } from "next";
-import { AdminPanel } from "@/features/admin/admin-panel";
+import {Suspense} from 'react';
 import LocalAccess from '@/components/LocalAccess';
+import {StudioPage} from '@/features/admin/studio-page';
 
-export const metadata: Metadata = { title: "Админ-панель" };
-
-export default function AdminPage() {
-  return <LocalAccess admin><AdminPanel /></LocalAccess>;
+export default function Page() {
+  return <LocalAccess admin><Suspense><StudioPage section="overview"/></Suspense></LocalAccess>;
 }

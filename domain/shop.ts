@@ -5,10 +5,11 @@ export const shopPath = '/shop';
 const cardPrefix = 'shop-card-';
 
 export type ShopFilters = {
+  collection?:string; newOnly?:boolean;
   search: string;
   category: string;
   game: Game | '';
-  sort: 'price' | 'price-desc' | 'name';
+  sort: 'price' | 'price-desc' | 'name' | 'order';
   affordableOnly: boolean;
   favoritesOnly: boolean;
 };
@@ -35,8 +36,10 @@ export function readShopFilters(params: URLSearchParams): ShopFilters {
   return {
     search: params.get('q') ?? '',
     category,
-    game: category === 'gaming' ? games.find(game => game === params.get('game')) ?? '' : '',
-    sort: sort === 'name' || sort === 'price-desc' ? sort : 'price',
+    ...(params.get('collection')?{collection:params.get('collection')!}:{}),
+    ...(params.get('new')==='1'?{newOnly:true}:{}),
+    game: category === 'gaming' || params.get('collection')==='gaming' ? games.find(game => game === params.get('game')) ?? '' : '',
+    sort: sort === 'order' || sort === 'name' || sort === 'price-desc' ? sort : 'price',
     affordableOnly: params.get('affordable') === '1',
     favoritesOnly: params.get('favorites') === '1',
   };
@@ -59,7 +62,9 @@ export function shopHref(filters: ShopFilters, productId?: string, returnTo?: st
   const params = new URLSearchParams();
   if (filters.search) params.set('q', filters.search);
   if (filters.category) params.set('category', filters.category);
-  if (filters.category === 'gaming' && filters.game) params.set('game', filters.game);
+  if(filters.collection)params.set('collection',filters.collection);
+  if(filters.newOnly)params.set('new','1');
+  if ((filters.collection==='gaming'||filters.category === 'gaming') && filters.game) params.set('game', filters.game);
   if (filters.sort !== 'price') params.set('sort', filters.sort);
   if (filters.affordableOnly) params.set('affordable', '1');
   if (filters.favoritesOnly) params.set('favorites', '1');

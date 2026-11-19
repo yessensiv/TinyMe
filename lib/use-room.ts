@@ -8,7 +8,7 @@ import {
   initialRoom,
   RoomData,
   accrue,
-  catalog,
+
   placementError,
   productOf,
   mergeRoom,
@@ -18,7 +18,8 @@ import {
 import { supabase, rpc, errorMessage } from "./supabase";
 import { BackgroundSession, type ActivitySnapshot } from "./background-session";
 import { furnishStudio } from '@/domain/studio-layout';
-import { readWorkshopProducts, buyWorkshopProduct } from '@/domain/workshop-catalog';
+import {readStudio,studioProducts} from '@/domain/studio';
+import { buyWorkshopProduct,roomProductSnapshot } from '@/domain/workshop-catalog';
 export function useRoom() {
   const [room, setRoom] = useState<RoomData>(initialRoom);
   const [user, setUser] = useState<User | null>(null);
@@ -30,6 +31,12 @@ export function useRoom() {
   const [activity, setActivity] = useState("Нажмите в комнате, чтобы начать");
   const [ready, setReady] = useState(false);
   const state = useRef(room);
+  const rewardRef=useRef(1);
+  useEffect(()=>{
+    function refresh(){try{rewardRef.current=readStudio(localStorage).settings.reward;}catch{rewardRef.current=1;}}
+    refresh();window.addEventListener('tinyme:workshop-catalog',refresh);window.addEventListener('storage',refresh);
+    return ()=>{window.removeEventListener('tinyme:workshop-catalog',refresh);window.removeEventListener('storage',refresh);};
+  },[]);
   useEffect(() => { state.current = room; }, [room]);
   const [timerRunning, setTimerRunning] = useState(false);
   const timerControl = useRef<() => void>(() => {});
@@ -90,7 +97,7 @@ export function useRoom() {
             } catch {
               setRoom(initialRoom());
             }
-          } else setRoom(initialRoom());
+          } else setRoom({...initialRoom(),balance:readStudio(localStorage).settings.startingCoins});
           setStatus("Сохранено на устройстве");
         }
       } catch (e) {
@@ -145,7 +152,7 @@ export function useRoom() {
       request: (action, id, seq) => rpc<ActivitySnapshot>("activity", {
         p_operation: browserId(), p_session: id, p_action: action, p_seq: seq,
       }),
-      elapsed: delta => { if (live) setRoom(s => accrue(s, delta)); },
+      elapsed: delta => { if (live) setRoom(s => accrue(s, delta, rewardRef.current)); },
       snapshot: data => {
         if (live) setRoom(s => mergeRoom(s, { ...s, activeMs: data.activeMs,
           balance: data.balance, balanceRevision: data.balanceRevision }));
@@ -281,7 +288,7 @@ export function useRoom() {
         const s = state.current;
         let next = { ...s, revision: s.revision + 1, items: [...s.items] };
         if (kind === "purchase") {
-          const p = [...catalog, ...readWorkshopProducts(localStorage)].find((p) => p.id === payload.productId);
+          const p = studioProducts(readStudio(localStorage)).find((p) => p.id === payload.productId);
           if (!p) throw Error('Вещь больше не доступна в магазине');
           if (p.id.startsWith('workshop:')) {
             next = buyWorkshopProduct(s, p, browserId());
@@ -295,6 +302,7 @@ export function useRoom() {
               {
                 id: browserId(),
                 productId: p.id,
+                workshopProduct: roomProductSnapshot(p),
                 x: null,
                 y: null,
                 rotation: 0,

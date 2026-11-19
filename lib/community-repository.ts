@@ -1,5 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { applyCommunityAction, initialCommunity, type Actor, type CommunityAction, type CommunityState, type ShopProduct } from '@/domain/community';
+import {readStudio,studioProducts,studioKey} from '@/domain/studio';
+import { catalog } from '@/domain/model';
 import { readWorkshopProducts } from '@/domain/workshop-catalog';
 
 export const communityKey='tinyme:community:v1';
@@ -12,6 +14,12 @@ export function readLocalCommunity(storage: Pick<Storage,'getItem'>): CommunityS
   const raw=storage.getItem(communityKey);
   const state:CommunityState=raw?JSON.parse(raw):initialCommunity();
   if(state.version!==1||!['products','profiles','reviews','comments','likes','selections','cart','favorites'].every(key=>Array.isArray(state[key as keyof CommunityState])))throw Error('Не удалось прочитать каталог. Сохранённые данные не изменены.');
+  if(storage.getItem(studioKey)){
+    const studio=readStudio(storage), reserved=new Set([...catalog.map(p=>p.id),...studio.items.map(i=>i.id)]);
+    const custom=state.products.filter(p=>!reserved.has(p.id)&&!p.id.startsWith('workshop:'));
+    state.products=[...custom,...studioProducts(studio).map(p=>({...p,archived:false}))];
+    return state;
+  }
   const workshop = readWorkshopProducts(storage);
   state.products = state.products.filter(p => !p.id.startsWith('workshop:'));
   state.products.push(...workshop.map(p => ({ ...p, description: 'Вещь из мастерской TinyMe.', archived: false })));

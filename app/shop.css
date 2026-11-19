@@ -146,3 +146,5 @@
 @container panel (min-width: 620px) {
   .shop-detail-layout { grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); }
 }
+.shop-taxonomy {display:flex;gap:5px;flex-wrap:wrap;padding:8px 12px 0}.shop-taxonomy span {font-size:11px;border-radius:8px;padding:3px 7px;background:var(--color-card);color:var(--color-secondary);border:1px solid var(--border-control)}
+.shop-shelf {margin:16px 0}.shop-shelf h2 {font-size:16px}.shop-shelf>div {display:flex;gap:8px;flex-wrap:wrap}.shop-shelf :is(button,a){display:inline-flex;align-items:center;gap:8px;border:1px solid var(--border-control);border-radius:10px;background:var(--color-card);padding:8px 12px;color:var(--color-text)}

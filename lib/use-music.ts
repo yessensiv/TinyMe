@@ -18,6 +18,8 @@ import { audioFingerprint, findDuplicateAudio, duplicateNotice } from "./music-d
 import { listenThreshold } from "@/domain/model";
 import {MusicSpectrum} from './music-spectrum';
 import {SPECTRUM_BANDS} from '@/domain/live-details';
+import {readStudio,studioKey} from '@/domain/studio';
+import {workshopCatalogEvent} from '@/domain/workshop-catalog';
 import { loadWorkshopTracks, mergeWorkshopMusic, workshopMusicEvent } from './workshop-music';
 import {
   musicRequest,
@@ -81,7 +83,7 @@ export function useMusic(owner: string, notify: (s: string) => void) {
         if (!cancelled) revision.current = remote.library.revision;
         return mergeCloudMusic(s, remote);
       })
-      .then(async (s) => mergeWorkshopMusic(s, await loadWorkshopTracks()))
+      .then(async (s) => mergeWorkshopMusic(s, await loadWorkshopTracks(),readStudio(localStorage).playlists))
       .then((s) => {
         if (!cancelled) {
           setMusic(s);
@@ -103,13 +105,14 @@ export function useMusic(owner: string, notify: (s: string) => void) {
     if (!ready) return;
     let cancelled = false;
     const refresh = () => { void loadWorkshopTracks().then(tracks => {
-      if (!cancelled) setMusic(s => mergeWorkshopMusic(s, tracks));
+      if (!cancelled) setMusic(s => mergeWorkshopMusic(s, tracks,readStudio(localStorage).playlists));
     }).catch(() => notifyRef.current('Не удалось обновить музыку мастерской')); };
-    const storage = (e: StorageEvent) => { if (e.key === workshopMusicEvent) refresh(); };
+    const storage = (e: StorageEvent) => { if (e.key === workshopMusicEvent || e.key===studioKey) refresh(); };
+    window.addEventListener(workshopCatalogEvent,refresh);
     window.addEventListener(workshopMusicEvent, refresh);
     window.addEventListener('focus', refresh);
     window.addEventListener('storage', storage);
-    return () => { cancelled = true; window.removeEventListener(workshopMusicEvent, refresh); window.removeEventListener('focus', refresh); window.removeEventListener('storage', storage); };
+    return () => { cancelled = true; window.removeEventListener(workshopCatalogEvent,refresh);window.removeEventListener(workshopMusicEvent, refresh); window.removeEventListener('focus', refresh); window.removeEventListener('storage', storage); };
   }, [ready, owner]);
   useEffect(() => {
     if (ready)

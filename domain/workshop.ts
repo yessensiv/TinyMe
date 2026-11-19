@@ -1,4 +1,4 @@
-import { categories, type CatalogItem, type ItemKind } from '../config/demo';
+import { type CatalogItem, type ItemKind } from '../config/demo';
 
 export type WorkshopItem = CatalogItem & { description?: string; images?: string[]; collectionId?: string };
 export type WorkshopCollection = { id: string; title: string; description: string };
@@ -21,7 +21,7 @@ export function parseWorkshop(raw: string): { version: 1; items: WorkshopItem[];
   }
   const itemIds = new Set<string>();
   for (const item of data.items) {
-    if (!record(item) || !text(item.id, 100) || itemIds.has(item.id) || !text(item.title, 100) || !categories.includes(String(item.category)) || !kinds.includes(item.illustration as ItemKind) || typeof item.color !== 'string' || !/^#[0-9a-f]{6}$/i.test(item.color) || !integer(item.width, 1, 12) || !integer(item.depth, 1, 8) || !integer(item.price, 0, 1000000) || typeof item.purchasable !== 'boolean' || (item.description !== undefined && (typeof item.description !== 'string' || item.description.length > 2000)) || (item.images !== undefined && (!Array.isArray(item.images) || item.images.length > 4 || !item.images.every(validWorkshopImage))) || (item.collectionId !== undefined && (typeof item.collectionId !== 'string' || !ids.has(item.collectionId)))) throw Error('INVALID_ITEM');
+    if (!record(item) || !text(item.id, 100) || itemIds.has(item.id) || !text(item.title, 100) || !text(item.category, 100) || !kinds.includes(item.illustration as ItemKind) || typeof item.color !== 'string' || !/^#[0-9a-f]{6}$/i.test(item.color) || !integer(item.width, 1, 12) || !integer(item.depth, 1, 8) || !integer(item.price, 0, 1000000) || typeof item.purchasable !== 'boolean' || (item.description !== undefined && (typeof item.description !== 'string' || item.description.length > 2000)) || (item.images !== undefined && (!Array.isArray(item.images) || item.images.length > 4 || !item.images.every(validWorkshopImage))) || (item.collectionId !== undefined && (typeof item.collectionId !== 'string' || !ids.has(item.collectionId)))) throw Error('INVALID_ITEM');
     itemIds.add(item.id);
   }
   return data as ReturnType<typeof parseWorkshop>;

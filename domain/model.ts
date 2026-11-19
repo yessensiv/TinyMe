@@ -332,12 +332,12 @@ export function initialRoom(): RoomData {
 }
 export function productOf(item: Item) {
   const custom = item.workshopProduct;
-  if (custom && custom.id === item.productId && custom.id.startsWith('workshop:')
+  if (custom && custom.id === item.productId && (custom.id.startsWith('workshop:') || catalog.some(p=>p.id===custom.id))
     && typeof custom.name === 'string' && custom.name.length <= 100 && typeof custom.category === 'string'
     && Number.isInteger(custom.w) && custom.w >= 1 && custom.w <= 12 && Number.isInteger(custom.h) && custom.h >= 1 && custom.h <= 8
     && Number.isInteger(custom.price) && custom.price >= 0 && custom.price <= 1000000
-    && ['plant','lamp','shelf','armchair','sofa','vase','bed','desk','chair'].includes(custom.kind)
-    && custom.surface === 'floor' && /^#[0-9a-f]{6}$/i.test(custom.color)
+    && ['plant','lamp','shelf','armchair','sofa','vase','bed','desk','chair','collectible','art','record','books','rug','dresser','ottoman','coffee-table'].includes(custom.kind)
+    && ['floor','wall','rug'].includes(custom.surface) && /^#[0-9a-f]{6}$/i.test(custom.color)
     && (custom.image === undefined || validWorkshopImage(custom.image))) return custom;
   const p = catalog.find((p) => p.id === item.productId);
   if (!p) throw Error("Неизвестная мебель");
@@ -399,15 +399,15 @@ export function placementError(
     return "Здесь уже стоит другой предмет";
   return null;
 }
-export function accrue(state: RoomData, delta: number): RoomData {
+export function accrue(state: RoomData, delta: number, reward=1): RoomData {
   const ms = Math.max(0, Math.floor(delta));
   return {
     ...state,
     activeMs: state.activeMs + ms,
     balance:
       state.balance +
-      Math.floor((state.activeMs + ms) / 60000) -
-      Math.floor(state.activeMs / 60000),
+      (Math.floor((state.activeMs + ms) / 60000) -
+      Math.floor(state.activeMs / 60000))*reward,
   };
 }
 export function formatTime(ms: number) {

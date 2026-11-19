@@ -7,6 +7,8 @@ import styles from './local-auth.module.css';
 
 export default function CloudAuthForm({ register, next }: { register: boolean; next?: string }) {
   const router = useRouter();
+  const testRegistration = process.env.NEXT_PUBLIC_TEST_ADMIN_REGISTRATION_URL;
+  const [role, setRole] = useState<'user' | 'admin'>('user');
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState('');
   async function submit(event: FormEvent<HTMLFormElement>) {
@@ -43,13 +45,26 @@ export default function CloudAuthForm({ register, next }: { register: boolean; n
   return <main className={styles.page}><Link className={styles.brand} href="/">tiny me.</Link>
     <section className={styles.card}><h1>{register ? 'Создать аккаунт' : 'Войти в TinyMe'}</h1>
       <p className={styles.lead}>Один аккаунт для комнаты, отзывов и подборок.</p>
-      <form onSubmit={submit}><fieldset className={styles.fields} disabled={busy}>
+      {register && testRegistration && <fieldset className={styles.roles}>
+        <legend>Тип аккаунта</legend>
+        <label data-selected={role === 'user'}>
+          <input type="radio" name="registration-role" checked={role === 'user'} onChange={() => setRole('user')}/>
+          <span><strong>Пользователь</strong><small>Комната и сообщество TinyMe</small></span>
+        </label>
+        <label data-selected={role === 'admin'}>
+          <input type="radio" name="registration-role" checked={role === 'admin'} onChange={() => setRole('admin')}/>
+          <span><strong>Администратор · тест</strong><small>Мастерская с данными в этом браузере</small></span>
+        </label>
+      </fieldset>}
+      {register && role === 'admin' && testRegistration
+        ? <a className={styles.testRegister} href={testRegistration}>Перейти к тестовой регистрации</a>
+        : <form onSubmit={submit}><fieldset className={styles.fields} disabled={busy}>
         {register && <label>Имя<input name="name" autoComplete="nickname" minLength={2} maxLength={50} required/></label>}
         <label>Email<input name="email" type="email" autoComplete="username" required/></label>
         <label>Пароль<input name="password" type="password" minLength={register ? 8 : undefined} autoComplete={register ? 'new-password' : 'current-password'} required/></label>
         {message && <p role="status">{message}</p>}
         <button className={styles.submit}>{busy ? 'Подождите…' : register ? 'Создать аккаунт' : 'Войти'}</button>
-      </fieldset></form>
+      </fieldset></form>}
       <p className={styles.switch}><Link href={{pathname:register ? '/login' : '/register',query:next ? {next} : undefined}}>{register ? 'Уже есть аккаунт? Войти' : 'Создать аккаунт'}</Link></p>
     </section></main>;
 }

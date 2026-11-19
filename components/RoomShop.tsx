@@ -4,18 +4,21 @@ import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, ArrowRight, Coins, Heart, Maximize2, Plus, Search, X } from 'lucide-react';
 import { games } from '@/domain/gaming-collection';
-import { canPlaceOnTop, catalog, type Product } from '@/domain/model';
+import { canPlaceOnTop, type Product } from '@/domain/model';
 import { defaultShopFilters, matchesShopFilters, shopCardId, shopHref, type ShopFilters } from '@/domain/shop';
 import { compatibleDecor, shopCollectionTitle, shopDescriptions } from '@/domain/shop-content';
 import type { WorkshopProduct } from '@/domain/workshop-catalog';
 import { characterDetails } from '@/engine/character-miniatures';
 import { posterArt } from '@/engine/poster-assets';
-import { useWorkshopProducts } from '@/lib/use-workshop-products';
+import { useStudio } from '@/lib/use-studio';
+import { studioProducts } from '@/domain/studio';
 import FurniturePreview from './FurniturePreview';
 import Select from './Select';
+import ShopCard from './ShopCard';
 
 const favoritesKey = 'myroom:shop-favorites:v1';
 const sortOptions: { value: ShopFilters['sort']; label: string }[] = [
+  { value:'order',label:'Порядок витрины' },
   { value: 'price', label: 'Сначала дешевле' },
   { value: 'price-desc', label: 'Сначала дороже' },
   { value: 'name', label: 'По названию' },
@@ -39,15 +42,14 @@ type Props = {
 };
 
 export default function RoomShop({ active, productId, filters, returnTarget, balance, ownedCounts, busy, onNavigate, onFiltersChange, onPurchase, onInspect, onNotice }: Props) {
-  const workshop = useWorkshopProducts();
-  const products = useMemo<WorkshopProduct[]>(() => [...catalog, ...workshop.products], [workshop.products]);
-  const categoryOptions = useMemo(() => [
-    { value: '', label: 'Все категории' }, { value: 'new', label: 'Новинки' }, { value: 'gaming', label: 'Игровая коллекция' },
-    ...[...new Set(products.map(product => product.category))].map(value => ({ value, label: value })),
-  ], [products]);
+  const workshop = useStudio();
+  const products = useMemo(() => workshop.data ? studioProducts(workshop.data) : [], [workshop.data]);
+  const categoryOptions = [{value:'',label:'Все категории'},...(workshop.data?.categories??[]).filter(c=>c.isVisible).sort((a,b)=>a.order-b.order).map(c=>({value:c.id,label:c.name}))];
   const { search, game, sort, affordableOnly, favoritesOnly } = filters;
-  const selectedCategory = categoryOptions.find(option => option.value === filters.category);
-  const category = selectedCategory?.value ?? '';
+  const selectedCategory = categoryOptions.find(c=>c.value===filters.category || c.label===filters.category);
+  const category = selectedCategory?.value??'';
+  const collection=filters.collection??(filters.category==='gaming'?'gaming':'');
+  const newOnly=filters.newOnly??(filters.category==='new');
   const [favorites, setFavorites] = useState<Set<string> | null>(null);
 
   useEffect(() => {
@@ -64,18 +66,20 @@ export default function RoomShop({ active, productId, filters, returnTarget, bal
 
   const visibleProducts = useMemo(() => {
     const terms = normalize(search).split(/\s+/).filter(Boolean);
-    const availableFilters = { ...filters, category };
+    const availableFilters = { ...filters, category: '' };
     return products.filter(product => {
+      if(category && product.categoryId!==category || collection && product.collectionId!==collection || newOnly && !product.isNew || collection==='gaming' && game && product.game!==game)return false;
       if (!matchesShopFilters(product, availableFilters, balance, favorites)) return false;
       if (!terms.length) return true;
       const searchable = normalize([product.name, product.category, product.game, shopCollectionTitle(product), descriptionOf(product)].join(' '));
       return terms.every(term => searchable.includes(term));
     }).sort((a, b) => {
       const byName = a.name.localeCompare(b.name, 'ru');
+      if (sort === 'order') return collection?(a.collectionOrder??a.order)-(b.collectionOrder??b.order):a.order-b.order;
       if (sort === 'name') return byName;
       return (sort === 'price-desc' ? b.price - a.price : a.price - b.price) || byName;
     });
-  }, [balance, category, favorites, filters, products, search, sort]);
+  }, [balance, category, collection, newOnly, game, favorites, filters, products, search, sort]);
 
   const hasReturnCard = !!returnTarget && visibleProducts.some(product => shopCardId(product.id) === returnTarget);
   useEffect(() => {
@@ -134,8 +138,8 @@ export default function RoomShop({ active, productId, filters, returnTarget, bal
       {product ? <ProductDetails key={product.id} product={product} owned={ownedCounts.get(product.id) ?? 0}
         favorite={favoriteButton(product)} purchase={purchaseButton(product)} onInspect={onInspect} />
         : <div className="page-heading"><div>
-          <h1 id="shop-product-title">{productId.startsWith('workshop:') && !workshop.loaded ? 'Открываем товар…' : 'Товар не найден'}</h1>
-          {workshop.loaded && productId.startsWith('workshop:') && workshop.error ? <p role="alert">{workshop.error}</p> : null}
+          <h1 id="shop-product-title">{productId.startsWith('workshop:') && !workshop.data ? 'Открываем товар…' : 'Товар не найден'}</h1>
+          {workshop.data && productId.startsWith('workshop:') && workshop.error ? <p role="alert">{workshop.error}</p> : null}
         </div></div>}
     </section>;
   }
@@ -144,7 +148,9 @@ export default function RoomShop({ active, productId, filters, returnTarget, bal
   const activeFilters: { key: keyof ShopFilters; label: string; clear: Partial<ShopFilters> }[] = [];
   if (search) activeFilters.push({ key: 'search', label: `Поиск «${search}»`, clear: { search: '' } });
   if (category) activeFilters.push({ key: 'category', label: selectedCategory!.label, clear: { category: '', game: '' } });
-  if (category === 'gaming' && game) activeFilters.push({ key: 'game', label: game, clear: { game: '' } });
+  if (collection === 'gaming' && game) activeFilters.push({ key: 'game', label: game, clear: { game: '' } });
+  if(collection)activeFilters.push({key:'collection',label:workshop.data?.collections.find(c=>c.id===collection)?.name??'Коллекция',clear:{category,collection:'',game:''}});
+  if(newOnly)activeFilters.push({key:'newOnly',label:'Новинки',clear:{category,newOnly:false}});
   if (favoritesOnly) activeFilters.push({ key: 'favoritesOnly', label: 'Избранное', clear: { favoritesOnly: false } });
   if (affordableOnly) activeFilters.push({ key: 'affordableOnly', label: 'Хватает монет', clear: { affordableOnly: false } });
   if (sort !== defaultShopFilters.sort) activeFilters.push({ key: 'sort', label: sortOptions.find(option => option.value === sort)!.label, clear: { sort: defaultShopFilters.sort } });
@@ -166,14 +172,25 @@ export default function RoomShop({ active, productId, filters, returnTarget, bal
       </div>
       <div className="shop-filters">
         <Select aria-label="Категория товаров" value={category} onValueChange={value => update({ category: value, game: '' })} options={categoryOptions} />
-        {category === 'gaming' && <Select aria-label="Игра" value={game} onValueChange={value => update({ game: games.find(game => game === value) ?? '' })}
+        <Select aria-label="Коллекции" value={collection} onValueChange={value=>update({collection:value,category,game:''})} options={[{value:'',label:'Все коллекции'},...(workshop.data?.collections??[]).filter(c=>c.isVisible&&products.some(p=>p.collectionId===c.id)).sort((a,b)=>a.order-b.order).map(c=>({value:c.id,label:c.name}))]}/>
+        {workshop.data?.settings.showNew&&<button type="button" className="shop-filter-chip" aria-pressed={newOnly} onClick={()=>update({category,newOnly:!newOnly})}>Новинки</button>}
+        {collection === 'gaming' && <Select aria-label="Игра" value={game} onValueChange={value => update({ game: games.find(game => game === value) ?? '' })}
           options={[{ value: '', label: 'Все игры' }, ...games.map(value => ({ value, label: value }))]} />}
         <Select aria-label="Сортировка товаров" value={sort} onValueChange={value => update({ sort: sortOptions.find(option => option.value === value)?.value ?? defaultShopFilters.sort })} options={sortOptions} />
         <label className="shop-affordable"><input type="checkbox" checked={affordableOnly} onChange={event => update({ affordableOnly: event.target.checked })} />Хватает монет</label>
       </div>
     </section>
 
-    <div className="shop-results-toolbar">
+    {(workshop.data?.settings.blocks??['Каталог']).map(block=>{
+      if(block==='Коллекции'){
+        const groups=workshop.data?.collections.filter(c=>products.some(p=>p.collectionId===c.id)).sort((a,b)=>a.order-b.order)??[];
+        return groups.length>0&&<section key={block} className="shop-shelf"><h2>Коллекции</h2><div>{groups.map(g=><button key={g.id} type="button" aria-pressed={collection===g.id} onClick={()=>update({category,collection:collection===g.id?'':g.id,game:''})}>{g.cover&&<img src={g.cover} alt="" width="40" height="40"/>}{g.name}</button>)}</div></section>;
+      }
+      if(block==='Новинки'){
+        const fresh=visibleProducts.filter(p=>p.isNew);
+        return fresh.length>0&&<section key={block} className="shop-shelf"><h2>Новинки</h2><div>{fresh.slice(0,6).map(p=><Link key={p.id} href={shopHref(filters,p.id)} onNavigate={e=>{e.preventDefault();onNavigate(p.id);}}>{p.name}<ArrowRight size={14}/></Link>)}</div></section>;
+      }
+      return <section key={block} aria-label="Каталог">    <div className="shop-results-toolbar">
       <p className="search-count tabular-nums" role="status">Найдено: {visibleProducts.length}</p>
       {activeFilters.length > 0 && <div className="shop-active-filters" role="group" aria-label="Активные фильтры">
         {activeFilters.map(filter => <button key={filter.key} type="button" className="shop-filter-chip" aria-label={`Убрать: ${filter.label}`} onClick={() => update(filter.clear)}>
@@ -187,21 +204,11 @@ export default function RoomShop({ active, productId, filters, returnTarget, bal
       <Search size={24} aria-hidden="true" />
       <h2>{favoritesOnly && !favoriteCount ? 'Избранное пока пусто' : 'Товары не найдены'}</h2>
     </div> : <div className="product-grid">
-      {visibleProducts.map(product => <article className="product-card" key={product.id}>
-        <div className="product-image">
-          <div className="shop-card-preview" aria-hidden="true"><FurniturePreview product={product} /></div>
-          {favoriteButton(product)}
-          <span className="size-badge tabular-nums">{product.w} × {product.h}</span>
-        </div>
-        <small>{product.category}{product.collection === 'quiet-evening' ? ' · Тихий вечер' : ''}</small>
-        <h2><Link id={shopCardId(product.id)} href={shopHref(filters, product.id)} prefetch={false}
-          onNavigate={event => { event.preventDefault(); onNavigate(product.id); }}>
-          {product.name}<ArrowRight size={16} aria-hidden="true" />
-        </Link></h2>
-        <small className="owned-count tabular-nums">У тебя: {ownedCounts.get(product.id) ?? 0}</small>
-        <div className="product-bottom tabular-nums"><span><Coins size={16} aria-label="Монет" />{product.price}</span>{purchaseButton(product)}</div>
-      </article>)}
-    </div>}
+      {visibleProducts.map(product => <ShopCard key={product.id} product={product} favorite={favoriteButton(product)} purchase={purchaseButton(product)} owned={ownedCounts.get(product.id)??0} title={
+        <Link id={shopCardId(product.id)} href={shopHref(filters,product.id)} prefetch={false} onNavigate={e=>{e.preventDefault();onNavigate(product.id);}}>{product.name}<ArrowRight size={16} aria-hidden="true"/></Link>
+      }/>)}
+    </div>}</section>;
+    })}
   </section>;
 }
 

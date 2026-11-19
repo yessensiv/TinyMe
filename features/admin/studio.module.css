@@ -1,0 +1,424 @@
+.shell {
+  --panel: var(--color-card, #332d40);
+  --line: var(--border-control, #625969);
+  --ink: var(--color-text, #fff1e4);
+  --muted: var(--color-secondary, #cdbfc8);
+  --accent: var(--color-cream, #ffe5ca);
+  display: grid;
+  grid-template-columns: 210px minmax(0, 1fr);
+  gap: clamp(20px, 4vw, 60px);
+  max-width: 1440px;
+  margin: auto;
+  padding: 32px clamp(16px, 4vw, 54px) 110px;
+  color: var(--ink);
+  min-height: 100dvh;
+  align-content: start;
+}
+.nav {
+  display: grid;
+  align-content: start;
+  gap: 5px;
+  position: sticky;
+  top: 20px;
+  height: fit-content;
+}
+.nav a,
+.shell a {
+  color: inherit;
+  text-decoration: none;
+}
+.nav a {
+  padding: 12px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.nav a:first-child {
+  font-weight: 750;
+  font-size: 21px;
+  margin-bottom: 16px;
+}
+.nav a[aria-current='page'],
+.shell button[data-primary='true'] {
+  background: var(--accent);
+  color: #483645;
+}
+.content {
+  min-width: 0;
+}
+.content h1 {
+  font:
+    600 clamp(36px, 5vw, 60px) / 1.07 var(--font-cormorant),
+    Georgia,
+    serif;
+  margin: 12px 0 24px;
+}
+.content h2,
+.drawer h2 {
+  font-size: 20px;
+  margin: 8px 0 16px;
+}
+.shell :is(button, input:not([type='checkbox']):not([type='color']), select, textarea) {
+  border: 1px solid var(--line);
+  color: var(--ink);
+  background: var(--panel);
+  border-radius: 10px;
+  min-height: 40px;
+  padding: 8px 12px;
+  font: inherit;
+  font-size: 14px;
+  max-width: 100%;
+}
+.shell button {
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+.shell button:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+.shell :is(a, button, input, select, textarea, summary):focus-visible {
+  outline: 2px solid #eeb997;
+  outline-offset: 2px;
+}
+.shell label {
+  display: grid;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 13px;
+}
+.shell input[type='checkbox'] {
+  accent-color: #e9b393;
+  width: 18px;
+  height: 18px;
+}
+.shell .check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(200px, 100%), 1fr));
+  gap: 12px;
+}
+.card,
+.row,
+.box,
+.empty,
+.stat {
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--panel);
+  padding: 16px;
+}
+.stat {
+  display: grid;
+  gap: 8px;
+}
+.stat strong {
+  font-size: 30px;
+  color: var(--accent);
+}
+.row,
+.toolbar,
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+.row {
+  margin: 8px 0;
+}
+.row strong {
+  margin-right: auto;
+}
+.toolbar,
+.actions {
+  margin: 12px 0;
+}
+.toolbar > input {
+  flex: 1;
+  min-width: 120px;
+}
+.box {
+  margin: 14px 0;
+  display: grid;
+  gap: 12px;
+}
+.card {
+  min-width: 0;
+  display: grid;
+  gap: 10px;
+  align-content: start;
+}
+.card h3 {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.art {
+  background: radial-gradient(ellipse at center, #b99b8828, transparent), #262334;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  aspect-ratio: 1.6;
+  overflow: hidden;
+}
+.art :is(img, canvas) {
+  width: auto;
+  height: 100%;
+  max-width: 100%;
+  object-fit: contain;
+}
+.drawer {
+  position: fixed;
+  inset: 0 0 0 auto;
+  margin: 0;
+  height: 100dvh;
+  max-height: none;
+  width: min(540px, 100%);
+  max-width: 100%;
+  padding: 20px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  color: var(--ink);
+  overflow: auto;
+}
+.drawer::backdrop {
+  background: #121019aa;
+}
+.drawer header,
+.drawer footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.drawer fieldset {
+  border: 0;
+  display: grid;
+  gap: 12px;
+  padding: 12px 0;
+}
+.drawer legend {
+  font-size: 17px;
+  font-weight: 600;
+  padding-top: 16px;
+}
+.drawer footer {
+  position: sticky;
+  bottom: -20px;
+  background: var(--panel);
+  padding: 14px 0;
+  border-top: 1px solid var(--line);
+}
+.drop,
+.empty {
+  padding: 18px;
+  border: 1px dashed var(--line);
+  border-radius: 14px;
+}
+.toast {
+  position: fixed;
+  bottom: 18px;
+  right: 18px;
+  z-index: 10;
+  background: #483b48;
+  color: #fff4ea;
+  padding: 12px 18px;
+  border-radius: 12px;
+  box-shadow: 0 4px 24px #0004;
+}
+.table {
+  overflow: auto;
+}
+.table table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.table :is(th, td) {
+  text-align: left;
+  padding: 10px;
+  border-bottom: 1px solid var(--line);
+}
+@media (max-width: 800px) {
+  .shell {
+    display: block;
+    padding: 12px 14px 90px;
+  }
+  .nav {
+    position: static;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-bottom: 20px;
+  }
+  .nav a {
+    font-size: 13px;
+    padding: 8px;
+  }
+  .nav a:first-child {
+    width: 100%;
+    margin: 0;
+  }
+  .drawer {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}
+.shell .menu {
+  display: none;
+}
+.empty {
+  display: grid;
+  justify-items: start;
+  gap: 12px;
+  color: var(--muted);
+}
+.skeleton {
+  display: grid;
+  gap: 12px;
+}
+.skeleton i {
+  height: 54px;
+  background: var(--panel);
+  border-radius: 12px;
+}
+@media (max-width: 800px) {
+  .shell .menu {
+    display: inline-flex;
+    margin-bottom: 12px;
+  }
+  .nav[data-open='false'] {
+    display: none;
+  }
+}
+.undo {
+  position: fixed;
+  z-index: 11;
+  bottom: 16px;
+  left: 16px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 8px;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  max-width: calc(100vw - 32px);
+}
+.badge {
+  display: inline-flex;
+  justify-self: start;
+  font-size: 12px;
+  color: var(--muted);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-pill);
+  padding: 3px 8px;
+}
+.shell .toast,
+.shell .undo {
+  box-shadow: var(--shadow-floating);
+}
+.collectionGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(240px, 100%), 1fr));
+  gap: var(--space-4);
+  margin-top: var(--space-4);
+}
+.collectionCard {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  padding: var(--space-4);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-16);
+  background: var(--panel);
+}
+.collectionCard strong {
+  font-size: 18px;
+}
+.collectionCard small {
+  margin-left: auto;
+}
+.cover {
+  flex-basis: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 140px;
+  background: radial-gradient(ellipse at center, #daba9e24, transparent), var(--color-inset);
+  border-radius: var(--radius-12);
+  overflow: hidden;
+}
+.cover :is(canvas, img) {
+  max-width: 100%;
+  height: 100%;
+  width: auto;
+  object-fit: contain;
+}
+.cover canvas {
+  width: min(45%, 120px);
+}
+
+/* Give the artwork a definite canvas so its intrinsic size cannot grow the grid row. */
+.card .art {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1.25;
+  background: radial-gradient(ellipse at 50% 65%, #514451 0%, #2a2635 75%);
+}
+.card .art :is(img, canvas) {
+  position: absolute;
+  inset: 6%;
+  width: 88%;
+  height: 88%;
+  object-fit: contain;
+}
+.grid:has(.card) { grid-template-columns: repeat(auto-fill, minmax(min(228px, 100%), 1fr)); gap: 16px; }
+.card { gap: 9px; border-radius: 20px; }
+.card .actions { display: grid; grid-template-columns: auto auto; gap: 6px; margin: 4px 0 0; padding-top: 10px; border-top: 1px solid var(--line); }
+.shell .card .actions button { padding: 5px 6px; min-height: 34px; font-size: 12px; }
+.shell .card .actions button:first-child { color: var(--accent); }
+.shell button[data-primary=true] { background: var(--accent); color: #483645; }
+
+.audioUpload, .playlistIntro {
+  padding: clamp(20px, 4vw, 44px);
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  background: linear-gradient(120deg, #443541, var(--panel) 65%);
+}
+.audioUpload {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: clamp(18px, 4vw, 48px);
+}
+.audioUpload h2, .playlistIntro h2 { margin: 0; font-size: clamp(22px, 3vw, 32px); }
+.audioUpload p, .playlistIntro p { color: var(--muted); max-width: 56ch; }
+.audioUpload .drop { padding: 14px; background: #201d2870; }
+.audioUpload .drop button, .shell .playlistIntro button, .shell .toolbar button[aria-pressed=true] {
+  background: var(--accent);
+  color: #402f39;
+}
+.record {
+  width: clamp(96px, 12vw, 166px);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: radial-gradient(circle, #292431 2%, #f2bf98 3% 15%, transparent 16%),
+    repeating-radial-gradient(circle, transparent 0 3px, #ffffff12 4px 5px),
+    conic-gradient(from 30deg, #201c27, #706074, #211e29, #554957, #201c27);
+  box-shadow: 0 8px 20px #17131d55;
+}
+.shell { padding-bottom: calc(110px + env(safe-area-inset-bottom)); }
+@media (max-width: 580px) {
+  .audioUpload { grid-template-columns: 1fr; }
+  .record { width: 68px; }
+}
+.shell .drawer { z-index: 95; }

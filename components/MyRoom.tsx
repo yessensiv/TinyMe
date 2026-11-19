@@ -44,7 +44,9 @@ import {availablePlacement, initialPlacement} from '@/domain/drag';
 import { defaultShopFilters, isShopPath, readShopFilters, shopCardId, shopCardTarget, shopHref, shopProductId, shopProductPath, type ShopFilters } from '@/domain/shop';
 import {posterArt} from '@/engine/poster-assets';
 import type {Product} from '@/domain/model';
-import { productOf, placementError, Item, type Placement } from "@/domain/model";
+import {useStudio} from '@/lib/use-studio';
+import {studioProducts} from '@/domain/studio';
+import { productOf as originalProductOf, placementError, Item, type Placement } from "@/domain/model";
 import { usePlacementHistory } from '@/lib/use-placement-history';
 import { useRoom } from "@/lib/use-room";
 import { useAtmosphere } from "@/lib/use-atmosphere";
@@ -95,6 +97,9 @@ function mm(seconds: number) {
 }
 export default function MyRoom({ initialView = 'room', initialProductId }: { initialView?: 'room' | 'graph' | 'shop'; initialProductId?: string }) {
   const r = useRoom();
+  const studio=useStudio();
+  const liveProducts=useMemo(()=>new Map(studio.data?studioProducts(studio.data,false).map(p=>[p.id,p]):[]),[studio.data]);
+  function productOf(i:Item){const original=originalProductOf(i);const live=liveProducts.get(i.productId);return live?{...original,name:live.name,category:live.category}:original;}
   const progress = useProgress();
   const growthActivities = useMemo(()=>skillActivities(progress.data),[progress.data]);
   const [growthTab,setGrowthTab]=useState<'skills'|'tasks'|'rewards'>('skills');

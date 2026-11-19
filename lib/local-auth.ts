@@ -11,6 +11,7 @@ export const localAuthEvent = 'tinyme:local-auth';
 export function localReturnPath(value: string | string[] | undefined): string | undefined {
   if (typeof value !== 'string') return;
   if (isShopPath(value.split(/[?#]/, 1)[0])) return value;
+  if (/^\/admin\/(items|collections|categories|music|settings)$/.test(value)) return value;
   if (['/room', '/graph', '/admin', '/catalog', '/community'].includes(value)) return value;
 
   const match = /^\/(catalog|profiles|collections)\/((?:[a-z0-9_:-]|%3a)+)$/i.exec(value);
