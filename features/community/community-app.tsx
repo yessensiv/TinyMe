@@ -3,13 +3,14 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { browserId } from '@/lib/browser-id';
 import { usePathname, useRouter } from 'next/navigation';
-import { ArrowLeft, ArrowUpRight, Heart, Star, MessageCircle, Users, Layers, Plus, Search, LockKeyhole, Share2, Pencil, Trash2 } from 'lucide-react';
+import { ArrowLeft, ArrowUpRight, Heart, Star, MessageCircle, Layers, Plus, Search, LockKeyhole, Share2, Pencil, Trash2 } from 'lucide-react';
 import FurniturePreview from '@/components/FurniturePreview';
 import { filterProducts, ratingFor, type Review, type Selection, type CommunityState } from '@/domain/community';
 import { useCommunity } from '@/lib/use-community';
 import { localSignOut } from '@/lib/use-local-account';
 
 import styles from './community.module.css';
+import item from './product.module.css';
 
 type Model=ReturnType<typeof useCommunity>;
 type View='catalog'|'product'|'community'|'profile'|'selection';
@@ -47,18 +48,18 @@ export default function CommunityApp({view='catalog',id}:{view?:View;id?:string}
     }
   }, [view, model.actor, router]);
   return <main className={styles.page}>
-    <header className={styles.header}><Link href="/room" className={styles.brand}>tiny me<span>.</span></Link><nav aria-label="Каталог и сообщество"><Link aria-current={view==='catalog'?'page':undefined} href="/catalog">Каталог</Link><Link aria-current={view==='community'?'page':undefined} href="/community">Сообщество</Link>{model.actor&&<Link href={path('/profiles',model.actor.id)}>Мой профиль</Link>}</nav><Link className={styles.roomLink} href="/room">В комнату <ArrowUpRight size={16}/></Link></header>
+    <header className={styles.header}><Link href="/room" className={styles.brand}>tiny me<span>.</span></Link><nav aria-label="Каталог и сообщество"><Link aria-current={view==='catalog'?'page':undefined} href="/catalog">Каталог</Link><Link aria-current={view==='community'?'page':undefined} href="/community">Сообщество</Link>{model.actor&&<Link aria-current={view==='profile' && id===model.actor.id?'page':undefined} href={path('/profiles',model.actor.id)}>Мой профиль</Link>}</nav><Link className={styles.roomLink} href="/room">В комнату <ArrowUpRight size={16}/></Link></header>
     {!model.cloud&&<p className={styles.mode}><LockKeyhole size={14}/>Локальный режим · профили, отзывы и подборки доступны только в этом браузере.</p>}
-    {model.cloud&&<p className={styles.mode}><Users size={14}/>Общее сообщество TinyMe</p>}
     {model.error&&<div role="alert" className={styles.error}>{model.error}{!model.ready&&<button type="button" onClick={()=>void model.reload()}>Повторить загрузку</button>}</div>}
     {!model.ready?<p role="status" className={styles.loading}>Открываем каталог…</p>:<>
       {!model.actor&&<Access/>}
-      {model.actor&&model.cloud&&<button type="button" className={styles.quiet} onClick={()=>void localSignOut().catch(()=>window.alert("Не удалось выйти. Попробуйте снова."))}>Выйти из TinyMe</button>}
+
       {view==='catalog'&&<Catalog model={model}/>}
       {view==='product'&&<ProductPage model={model} id={id??''}/>}
       {view==='community'&&<CommunityPage model={model}/>}
       {view==='profile'&&<ProfilePage key={id} model={model} id={id??''}/>}
       {view==='selection'&&<SelectionPage model={model} id={id??''}/>}
+      {view==='profile'&&model.actor&&id===model.actor.id&&model.cloud&&<button type="button" className={styles.quiet} onClick={()=>void localSignOut().catch(()=>window.alert("Не удалось выйти. Попробуйте снова."))}>Выйти из TinyMe</button>}
     </>}
   </main>;
 }
@@ -70,7 +71,7 @@ function Access() {
 function Catalog({model}:{model:Model}){
   const [query,setQuery]=useState(''),[category,setCategory]=useState(''),[sort,setSort]=useState('name'),[minRating,setMinRating]=useState(0),[max,setMax]=useState('');
   const products=filterProducts(model.state,{query,category,sort,minRating,max:max===''?undefined:Number(max)});
-  return <><section className={styles.heading}><span>ДЕТАЛИ С ХАРАКТЕРОМ</span><h1>Найди свой уют<span>.</span></h1><p>Вещи для комнаты и идеи от тех, кто любит маленькие детали.</p></section>
+  return <><section className={styles.heading}><h1>Каталог вещей<span>.</span></h1><p>Вещи для комнаты и идеи от тех, кто любит маленькие детали.</p></section>
     <div className={styles.filters}><label className={styles.search}><Search size={18}/><span className={styles.srOnly}>Поиск товаров</span><input type="search" placeholder="Название или описание вещи" value={query} onChange={e=>setQuery(e.target.value)}/></label><label>Категория<select value={category} onChange={e=>setCategory(e.target.value)}><option value="">Все категории</option>{[...new Set(model.state.products.filter(p=>!p.archived).map(p=>p.category))].map(c=><option key={c}>{c}</option>)}</select></label><label>Цена до<input type="number" min={0} max={1000000} placeholder="Без лимита" value={max} onChange={e=>setMax(e.target.value)}/></label><label>Оценка<select value={minRating} onChange={e=>setMinRating(Number(e.target.value))}><option value={0}>Любая</option><option value={4}>От 4 ★</option><option value={3}>От 3 ★</option></select></label><label>Сортировка<select value={sort} onChange={e=>setSort(e.target.value)}><option value="name">По названию</option><option value="price-asc">Сначала дешевле</option><option value="price-desc">Сначала дороже</option><option value="rating">По оценке</option></select></label></div>
     <p className={styles.muted}>{products.length} вещей</p><ProductGrid model={model} ids={products.map(p=>p.id)}/>
     {!products.length&&<Empty title="Ничего не нашлось" text="Измени запрос или фильтры."/>}
@@ -82,38 +83,96 @@ function ProductPage({model,id}:{model:Model;id:string}){
   const own=model.state.reviews.find(r=>r.productId===id&&r.userId===model.actor?.id);
   const lists=model.state.selections.filter(s=>s.userId===model.actor?.id);
   if(!p)return <Empty title="Вещь не найдена" text="Возможно, она больше не доступна в каталоге."/>;
-  return <><Link className={styles.back} href="/catalog"><ArrowLeft size={16}/>Все вещи</Link><section className={styles.detail}><div className={styles.largeArt} style={{backgroundColor:`${p.color}25`}}><FurniturePreview product={p}/></div><div className={styles.detailCopy}><span className={styles.eyebrow}>{p.category}</span><h1>{p.name}</h1><Rating state={model.state} id={id}/><p>{p.description}</p><div className={styles.facts}><span>Размер <strong>{p.w} × {p.h} клетки</strong></span><span>Цена <strong>{p.price} монет</strong></span></div><ShareButton/>{model.actor&&<label className={styles.addTo}>Добавить в свою подборку<select value="" disabled={model.busy} onChange={e=>{const c=lists.find(c=>c.id===e.target.value);if(c)void model.act({type:'selection',selection:{...c,productIds:[...new Set([...availableProductIds(model, c.productIds), id])]}});}}><option value="">Выбери подборку</option>{lists.map(c=><option key={c.id} value={c.id} disabled={c.productIds.includes(id)}>{c.title}{c.productIds.includes(id)?' · уже добавлено':''}</option>)}</select><Link href={path('/profiles',model.actor.id)}>Создать или изменить подборку</Link></label>}</div></section>
-    <section className={styles.section}><div className={styles.sectionTitle}><div><span className={styles.eyebrow}>ОПЫТ И МАЛЕНЬКИЕ СОВЕТЫ</span><h2>Отзывы о вещи</h2></div><Rating state={model.state} id={id}/></div>
+  const reviews = model.state.reviews.filter(review => review.productId === id)
+    .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+
+  return <article className={item.page}>
+    <Link className={styles.back} href="/catalog"><ArrowLeft size={16}/>В каталог</Link>
+    <section className={item.hero}>
+      <div className={item.art} style={{backgroundColor: p.color + '25'}}>
+        <FurniturePreview product={p}/>
+      </div>
+      <div className={item.info}>
+        <span className={item.category}>{p.category}</span>
+        <h1>{p.name}</h1>
+        <a className={item.ratingLink} href="#reviews"><Rating state={model.state} id={id}/></a>
+        <p>{p.description}</p>
+        <dl className={item.facts}>
+          <div><dt>Цена в монетах</dt><dd>{p.price} <span aria-hidden="true">◈</span></dd></div>
+          <div><dt>Размер в клетках</dt><dd>{p.w} × {p.h}</dd></div>
+        </dl>
+        {model.actor && <div className={item.collections}>
+          {lists.length > 0 && <label>Добавить в подборку
+            <select defaultValue="" disabled={model.busy} onChange={event => {
+              const selection = lists.find(list => list.id === event.target.value);
+              event.target.value = '';
+              if (selection) void model.act({type:'selection', selection:{...selection,
+                productIds:[...new Set([...availableProductIds(model, selection.productIds), id])]}});
+            }}>
+              <option value="">Выбери подборку</option>
+              {lists.map(list => <option key={list.id} value={list.id} disabled={list.productIds.includes(id)}>
+                {list.title}{list.productIds.includes(id) ? ' · уже добавлено' : ''}
+              </option>)}
+            </select>
+          </label>}
+          <Link href={path('/profiles',model.actor.id)}><Layers size={16}/>{lists.length ? 'Мои подборки' : 'Создать первую подборку'} <ArrowUpRight size={14}/></Link>
+        </div>}
+        <div className={item.actions}><a href="#reviews" className={styles.primary}><MessageCircle size={16}/>{model.actor ? own ? 'Мой отзыв' : 'Оставить отзыв' : 'К отзывам'}</a><ShareButton/></div>
+      </div>
+    </section>
+    <section id="reviews" className={item.feedback}><h2>Отзывы <span>{reviews.length}</span></h2>
       {model.actor&&<ReviewForm key={own?`${own.id}:${own.rating}:${own.text}`:id} model={model} productId={id} existing={own}/>}
-      <div className={styles.reviews}>{model.state.reviews.filter(r=>r.productId===id).sort((a,b)=>b.createdAt.localeCompare(a.createdAt)).map(r=><ReviewCard key={r.id} model={model} review={r}/>)}</div>
-      {!model.state.reviews.some(r=>r.productId===id)&&<Empty title="Пока тихо" text="Поделись первым впечатлением об этой вещи."/>}
-    </section></>;
+      {reviews.length > 0 && <div className={styles.reviews}>{reviews.map(review =>
+        <ReviewCard key={review.id} model={model} review={review}/>)}</div>}
+      {!reviews.length && <p className={styles.muted}>У этой вещи пока нет отзывов.</p>}
+    </section></article>;
 }
 function ReviewForm({model,productId,existing}:{model:Model;productId:string;existing?:Review}){
   const [rating,setRating]=useState(existing?.rating??5),[body,setBody]=useState(existing?.text??''),[saved,setSaved]=useState(false);
-  return <form className={styles.compose} onSubmit={e=>{e.preventDefault();void model.act({type:'review',id:existing?.id??browserId(),productId,rating,text:body}).then(ok=>{if(ok)setSaved(true);});}}><fieldset disabled={model.busy}><legend>{existing?'Твой отзыв':'Как тебе эта вещь?'}</legend><div className={styles.stars} role="radiogroup" aria-label="Оценка товара">{[1,2,3,4,5].map(n=><label key={n}><input type="radio" name="rating" checked={rating===n} onChange={()=>{setRating(n);setSaved(false);}} value={n}/><Star size={24} fill={n<=rating?'currentColor':'none'}/><span className={styles.srOnly}>{n} из 5</span></label>)}</div><label><span className={styles.srOnly}>Текст отзыва</span><textarea required maxLength={2000} rows={3} placeholder="Что понравилось? Как вещь вписалась в твою комнату?" value={body} onChange={e=>{setBody(e.target.value);setSaved(false);}}/></label><div className={styles.between}><small>Один отзыв на вещь. Его можно изменить.</small><button className={styles.primary}>{model.busy?'Сохраняем…':existing?'Сохранить отзыв':'Опубликовать отзыв'}</button></div>{saved&&<p role="status">Отзыв сохранён.</p>}</fieldset></form>;
+  return <form className={styles.compose} onSubmit={e=>{e.preventDefault();void model.act({type:'review',id:existing?.id??browserId(),productId,rating,text:body}).then(ok=>{if(ok)setSaved(true);});}}><fieldset disabled={model.busy}><legend>{existing?'Твой отзыв':'Твоя оценка'}</legend><div className={styles.stars} role="radiogroup" aria-label="Оценка товара">{[1,2,3,4,5].map(n=><label key={n}><input type="radio" name="rating" checked={rating===n} onChange={()=>{setRating(n);setSaved(false);}} value={n}/><Star size={24} fill={n<=rating?'currentColor':'none'}/><span className={styles.srOnly}>{n} из 5</span></label>)}</div><label><span>Текст отзыва</span><textarea required maxLength={2000} rows={3} placeholder="Что понравилось? Как вещь вписалась в твою комнату?" value={body} onChange={e=>{setBody(e.target.value);setSaved(false);}}/></label><div className={styles.between}><small>Один отзыв на вещь. Его можно изменить.</small><button className={styles.primary}>{model.busy?'Сохраняем…':existing?'Сохранить отзыв':'Опубликовать отзыв'}</button></div>{saved&&<p role="status">Отзыв сохранён.</p>}</fieldset></form>;
 }
-function ReviewCard({model,review:r}:{model:Model;review:Review}){
-  const liked=model.state.likes.some(l=>l.reviewId===r.id&&l.userId===model.actor?.id);
-  const comments=model.state.comments.filter(c=>c.reviewId===r.id);
-  return <article className={styles.review}><div className={styles.between}><Author model={model} id={r.userId} avatar/><time dateTime={r.createdAt}>{new Date(r.createdAt).toLocaleDateString('ru-RU')}</time></div><div className={styles.rating}>{'★'.repeat(r.rating)}{'☆'.repeat(5-r.rating)}</div><p className={styles.bodyText}>{r.text}</p><div className={styles.actions}><button type="button" disabled={!model.actor||model.busy} aria-pressed={liked} onClick={()=>void model.act({type:'like',reviewId:r.id,active:!liked})}><Heart size={16} fill={liked?'currentColor':'none'}/>{model.state.likes.filter(l=>l.reviewId===r.id).length}<span className={styles.srOnly}>Полезный отзыв</span></button><span><MessageCircle size={16}/>{comments.length}</span>{r.userId===model.actor?.id&&<button type="button" disabled={model.busy} onClick={()=>{if(confirm('Удалить отзыв и комментарии к нему?'))void model.act({type:'deleteReview',id:r.id});}}><Trash2 size={15}/>Удалить отзыв</button>}</div>
+function ReviewCard({model,review:r,showProduct=false}:{model:Model;review:Review;showProduct?:boolean}){
+  const likes = model.state.likes.filter(like => like.reviewId === r.id);
+  const liked = likes.some(like => like.userId === model.actor?.id);
+  const comments = model.state.comments.filter(comment => comment.reviewId === r.id);
+  const product = showProduct && model.state.products.find(product => product.id === r.productId);
+  return <article className={styles.review}>
+    {product && !product.archived && <Link className={styles.reviewProduct} href={path('/catalog',product.id)}>
+      <FurniturePreview product={product}/><span><small>Отзыв о вещи</small><strong>{product.name}</strong></span><ArrowUpRight size={16}/>
+    </Link>}
+    <div className={styles.between}><Author model={model} id={r.userId} avatar/><time dateTime={r.createdAt}>{new Date(r.createdAt).toLocaleDateString('ru-RU')}</time></div>
+    <div className={styles.rating} aria-label={r.rating+' из 5'}>{'★'.repeat(r.rating)}{'☆'.repeat(5-r.rating)}</div>
+    <p className={styles.bodyText}>{r.text}</p>
+    <div className={styles.actions}>
+      <button type="button" className={styles.quiet} disabled={!model.actor||model.busy} aria-pressed={liked} onClick={()=>void model.act({type:'like',reviewId:r.id,active:!liked})}>
+        <Heart size={16} fill={liked?'currentColor':'none'}/>Нравится
+      </button>
+      {likes.length > 0 && <details className={styles.likers}>
+        <summary>Кому понравилось · {likes.length}</summary>
+        <ul>{likes.map(like => <li key={like.userId}>
+          {visibleProfile(model,like.userId) || model.actor?.id === like.userId
+            ? <Author model={model} id={like.userId} avatar/>
+            : <span><LockKeyhole size={14}/>Скрытый профиль</span>}
+        </li>)}</ul>
+      </details>}
+      <span><MessageCircle size={16}/>Ответы · {comments.length}</span>{r.userId===model.actor?.id&&<button type="button" disabled={model.busy} onClick={()=>{if(confirm('Удалить отзыв и комментарии к нему?'))void model.act({type:'deleteReview',id:r.id});}}><Trash2 size={15}/>Удалить отзыв</button>}</div>
     <div className={styles.comments}>{comments.map(c=><div className={styles.comment} key={c.id}><Author model={model} id={c.userId}/><p className={styles.bodyText}>{c.text}</p>{c.userId===model.actor?.id&&<button type="button" className={styles.quiet} disabled={model.busy} onClick={()=>void model.act({type:'deleteComment',id:c.id})}>Удалить</button>}</div>)}{model.actor&&<form onSubmit={e=>{e.preventDefault();const form=e.currentTarget;const body=String(new FormData(form).get('body')??'');void model.act({type:'comment',id:browserId(),reviewId:r.id,text:body}).then(ok=>{if(ok)form.reset();});}}><label><span className={styles.srOnly}>Комментарий к отзыву</span><input name="body" required maxLength={1000} disabled={model.busy} placeholder="Ответить на отзыв…"/></label><button className={styles.quiet} disabled={model.busy}>Отправить</button></form>}</div>
   </article>;
 }
 function SelectionCards({model,selections}:{model:Model;selections:Selection[]}){return <div className={styles.selectionGrid}>{selections.map(c=><article key={c.id} className={styles.selection}><Link href={path('/collections',c.id)} className={styles.selectionArt}>{c.productIds.slice(0,3).map(id=>{const p=model.state.products.find(p=>p.id===id&&!p.archived);return p?<FurniturePreview key={id} product={p}/>:null;})}{!c.productIds.length&&<Layers size={40}/>}</Link><div><span className={styles.eyebrow}>{c.public?'ПУБЛИЧНАЯ ПОДБОРКА':'ТОЛЬКО ДЛЯ ТЕБЯ'}</span><h2><Link href={path('/collections',c.id)}>{c.title}</Link></h2><p>{c.description}</p><small>{c.productIds.filter(id=>model.state.products.some(p=>p.id===id&&!p.archived)).length} вещей · {author(model,c.userId)}</small></div></article>)}</div>;}
-function CommunityPage({model}:{model:Model}){const selections=model.state.selections.filter(s=>s.public);return <><section className={styles.heading}><span>СОБРАНО С ЛЮБОВЬЮ</span><h1>У каждого свой уют<span>.</span></h1><p>Подборки вещей, маленькие находки и люди, которые их собирают.</p>{model.actor&&<Link className={styles.primary} href={path('/profiles',model.actor.id)}><Plus size={17}/>Собрать свою подборку</Link>}</section><section className={styles.section}><h2>Публичные подборки</h2><SelectionCards model={model} selections={selections}/>{!selections.length&&<Empty title="Здесь появятся ваши идеи" text="Создай подборку в своём профиле и включи публикацию."/>}</section><section className={styles.section}><h2>Люди TinyMe</h2><div className={styles.people}>{model.state.profiles.filter(p=>p.public).map(p=><Link key={p.id} href={path('/profiles',p.id)}><span className={styles.avatar}>{p.name.slice(0,1)}</span><strong>{p.name}</strong><span>{p.bio||'Маленькие детали большого уюта'}</span><ArrowUpRight size={17}/></Link>)}</div>{!model.state.profiles.some(p=>p.public)&&<p className={styles.muted}>Пока никто не опубликовал свой профиль.</p>}</section></>;}
+function CommunityPage({model}:{model:Model}){const selections=model.state.selections.filter(s=>s.public);return <><section className={styles.heading}><h1>Сообщество<span>.</span></h1><p>Подборки вещей, маленькие находки и люди, которые их собирают.</p>{model.actor&&<Link className={styles.primary} href={path('/profiles',model.actor.id)}><Plus size={17}/>Собрать свою подборку</Link>}</section><section className={styles.section}><h2>Публичные подборки</h2><SelectionCards model={model} selections={selections}/>{!selections.length&&<Empty title="Здесь появятся ваши идеи" text="Создай подборку в своём профиле и включи публикацию."/>}</section><section className={styles.section}><h2>Люди TinyMe</h2><div className={styles.people}>{model.state.profiles.filter(p=>p.public).map(p=><Link key={p.id} href={path('/profiles',p.id)}><span className={styles.avatar}>{p.name.slice(0,1)}</span><strong>{p.name}</strong><span>{p.bio||'Маленькие детали большого уюта'}</span><ArrowUpRight size={17}/></Link>)}</div>{!model.state.profiles.some(p=>p.public)&&<p className={styles.muted}>Пока никто не опубликовал свой профиль.</p>}</section></>;}
 function ProfilePage({model,id}:{model:Model;id:string}){
   const own=model.actor?.id===id,p=visibleProfile(model,id);
   const [edit,setEdit]=useState(false),[selection,setSelection]=useState<Selection|null|undefined>(undefined);
   if(!p&&!own)return <Empty title="Профиль недоступен" text="Этот пользователь ещё не опубликовал свой профиль."/>;
   const selections=model.state.selections.filter(c=>c.userId===id&&(c.public||own));
-  return <><section className={styles.profileHero}><span className={styles.bigAvatar}>{(p?.name??model.actor?.name??'Т').slice(0,1)}</span><div><span className={styles.eyebrow}>{own?'ТВОЁ ПРОСТРАНСТВО':'ПРОФИЛЬ TINYME'}</span><h1>{p?.name??model.actor?.name}</h1><p className={styles.bodyText}>{p?.bio||'Здесь начинается история маленького уюта.'}</p><small>{model.state.reviews.filter(r=>r.userId===id).length} отзывов · {selections.length} подборок{own&&!p?.public?' · профиль скрыт':''}</small></div>{own?<button className={styles.quiet} onClick={()=>setEdit(v=>!v)}><Pencil size={16}/>Редактировать профиль</button>:<ShareButton/>}</section>
+  return <><section className={styles.profileHero}><span className={styles.bigAvatar}>{(p?.name??model.actor?.name??'Т').slice(0,1)}</span><div><span className={styles.eyebrow}>{own?'МОЙ ПРОФИЛЬ':'ПРОФИЛЬ TINYME'}</span><h1>{p?.name??model.actor?.name}</h1>{p?.bio&&<p className={styles.bodyText}>{p.bio}</p>}<small>Отзывы · {model.state.reviews.filter(r=>r.userId===id).length}　 Подборки · {selections.length}{own&&!p?.public?' · профиль скрыт':''}</small></div>{own?<button className={styles.quiet} onClick={()=>setEdit(v=>!v)}><Pencil size={16}/>Редактировать профиль</button>:<ShareButton/>}</section>
     {own&&edit&&<ProfileForm key={`${p?.name}:${p?.bio}:${p?.public}`} model={model} onSaved={()=>setEdit(false)}/>}
     <section className={styles.section}><div className={styles.sectionTitle}><h2>{own?'Твои подборки':'Подборки'}</h2>{own&&<button className={styles.primary} onClick={()=>setSelection(null)}><Plus size={16}/>Новая подборка</button>}</div>
       {own&&selection!==undefined&&<SelectionEditor key={selection?.id??'new'} model={model} existing={selection??undefined} onDone={()=>setSelection(undefined)}/>}
-      <SelectionCards model={model} selections={selections}/>{!selections.length&&<Empty title="Подборок пока нет" text="Собери несколько вещей, которые хорошо смотрятся вместе."/>}
+      <SelectionCards model={model} selections={selections}/>{!selections.length&&<p className={styles.profileEmpty}>Подборок пока нет.</p>}
       {own&&<div className={styles.management}>{selections.map(c=><div key={c.id}><strong>{c.title}</strong><button className={styles.quiet} onClick={()=>setSelection(c)}><Pencil size={14}/>Изменить</button><button className={styles.quiet} disabled={model.busy} onClick={()=>{if(confirm('Удалить подборку? Товары останутся в каталоге.'))void model.act({type:'deleteSelection',id:c.id});}}><Trash2 size={14}/>Удалить</button></div>)}</div>}
-    </section><section className={styles.section}><h2>{own?'Твои отзывы':'Отзывы пользователя'}</h2>{model.state.reviews.filter(r=>r.userId===id).map(r=><div key={r.id}><Link className={styles.back} href={path('/catalog',r.productId)}>{model.state.products.find(p=>p.id===r.productId)?.name??'Товар'}</Link><ReviewCard model={model} review={r}/></div>)}</section></>;
+    </section><section className={styles.section}><h2>{own?'Твои отзывы':'Отзывы пользователя'}</h2>{model.state.reviews.filter(r=>r.userId===id).map(r=><ReviewCard key={r.id} model={model} review={r} showProduct/>)}</section></>;
 }
 function ProfileForm({model,onSaved}:{model:Model;onSaved:()=>void}){const p=model.state.profiles.find(p=>p.id===model.actor?.id);return <form className={styles.compose} onSubmit={e=>{e.preventDefault();const data=new FormData(e.currentTarget);void model.act({type:'profile',name:String(data.get('name')),bio:String(data.get('bio')),public:data.has('public')}).then(ok=>{if(ok)onSaved();});}}><fieldset disabled={model.busy}><legend>Профиль</legend><label>Имя<input name="name" minLength={2} maxLength={50} defaultValue={p?.name??model.actor?.name} required/></label><label>О себе<textarea name="bio" maxLength={500} defaultValue={p?.bio} rows={3}/></label><label className={styles.checkbox}><input name="public" type="checkbox" defaultChecked={p?.public??false}/>Показывать профиль в сообществе</label><small>Имя и описание будут видны всем. Email и пароль не публикуются.</small><button className={styles.primary}>Сохранить профиль</button></fieldset></form>;}
 function SelectionEditor({model,existing,onDone}:{model:Model;existing?:Selection;onDone:()=>void}){

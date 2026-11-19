@@ -12,3 +12,49 @@
 .authModes button { flex:1; color:inherit; background:transparent; border:0; border-radius:9px; padding:9px; }
 .authModes button[aria-pressed=true] { background:#514453; color:#ffe9cb; }
 @media(max-width:620px){.accessLayout{grid-template-columns:1fr;gap:14px}.accessLayout h2{font-size:28px}}
+
+.header { min-height: 72px; }
+.header nav { gap: 4px; }
+.header nav a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 42px;
+  padding: 0 14px;
+  border-radius: 12px;
+}
+.header nav a:hover { background: var(--social-card); }
+.header nav a[aria-current] { color: #493945; background: #ffe9cb; }
+.heading { padding: 24px 0; }
+.heading h1 { margin: 6px 0; }
+.profileHero {
+  margin: 24px 0;
+  padding: clamp(18px, 3vw, 32px);
+  border: 1px solid var(--social-line);
+  border-radius: 22px;
+  background: linear-gradient(110deg, #c4a48718, transparent 75%), var(--social-card);
+}
+.profileHero > div { min-width: 0; overflow-wrap: anywhere; }
+.bigAvatar { background: #ffe9cb; color: #493945; font-family: Georgia, serif; }
+.page > .quiet:last-child { margin-top: 28px; }
+@media (max-width: 760px) {
+  .header { gap: 10px; padding: 12px 0; }
+  .header nav a { flex: 1; justify-content: center; padding: 0 6px; }
+  .profileHero > button { flex-basis: 100%; }
+}
+.reviewProduct {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 18px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--social-line);
+}
+.reviewProduct :is(canvas,img) { width: 50px; height: 50px; background: #baa3b31a; border-radius: 12px; }
+.reviewProduct span { display: grid; gap: 3px; }
+.reviewProduct:hover strong { text-decoration: underline; }
+.likers { font-size: 13px; color: var(--social-text); }
+.likers summary { cursor: pointer; padding: 10px 4px; }
+.likers ul { padding: 8px 14px; margin: 4px 0; list-style: none; border: 1px solid var(--social-line); border-radius: 14px; }
+.likers li { padding: 5px 0; }
+.likers li > span { display: inline-flex; align-items: center; gap: 8px; color: var(--social-muted); }
+.profileEmpty { padding: 16px 20px; color: var(--social-muted); border-left: 2px solid var(--social-line); }

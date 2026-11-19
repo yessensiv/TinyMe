@@ -1,8 +1,11 @@
 "use client";
+import Link from 'next/link';
+import styles from './room-shortcuts.module.css';
 import RoomDock from "./RoomDock";
 import { localOnly } from '@/config/runtime';
 import { useLocalAccount } from '@/lib/use-local-account';
 import {
+  Users,
   UserRound,
   Settings,
   Coins,
@@ -56,7 +59,20 @@ export default function AppNavigation({
           <span className="wallet-orbit"><svg viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="20" r="17"/><circle cx="20" cy="20" r="17" strokeDasharray={`${(displayMs%60000)/60000*106.81} 106.81`}/></svg><Coins size={16} aria-hidden="true" strokeWidth={1.75}/></span>
           <strong key={balance}>{balance}</strong>
         </span>
-        <button className="studio-settings" aria-label={localOnly ? 'Мой профиль' : cloud ? 'Мой профиль' : 'Вход и регистрация'} title={cloud?'Мой профиль':'Вход и регистрация'} aria-current={view==='profile'?'page':undefined} onClick={()=>onNavigate('profile')}><UserRound size={20} strokeWidth={1.75}/></button>
+        <nav className={styles.shortcuts} aria-label="Профиль и сообщество">
+          <Link href="/community" aria-label="Сообщество" title="Сообщество">
+            <Users size={18}/><span>Сообщество</span>
+          </Link>
+          {account ? (
+            <Link href={'/profiles/' + encodeURIComponent(account.id)} aria-label="Мой профиль" title="Мой профиль">
+              <UserRound size={18}/><span>Мой профиль</span>
+            </Link>
+          ) : (
+            <button onClick={() => onNavigate('profile')} aria-label="Аккаунт" title="Аккаунт">
+              <UserRound size={18}/><span>Аккаунт</span>
+            </button>
+          )}
+        </nav>
         <button
           className="studio-settings"
           aria-label="Настройки"

@@ -1,0 +1,35 @@
+.shortcuts {
+  display: flex;
+  align-items: center;
+  padding: 3px;
+  gap: 2px;
+  border: 1px solid var(--border-control);
+  border-radius: 14px;
+  background: var(--color-card);
+}
+.shortcuts a, .shortcuts button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 0 10px;
+  min-height: 36px;
+  color: var(--color-text);
+  font: inherit;
+  font-size: 13px;
+  border: 0;
+  border-radius: 10px;
+  text-decoration: none;
+  background: transparent;
+}
+.shortcuts :is(a,button):is(:hover,:focus-visible) {
+  background: var(--color-text);
+  color: var(--color-card);
+}
+@media (max-width: 760px) {
+  .shortcuts span { display: none; }
+  .shortcuts a, .shortcuts button { width: 36px; padding: 0; }
+}
+@media (max-width: 390px) {
+  :global(.studio-header):has(.shortcuts) :global(.studio-brand) > span:last-child { display: none; }
+}
