@@ -7,8 +7,8 @@ import FurniturePreview from '@/components/FurniturePreview';
 import ShopCard from '@/components/ShopCard';
 import { studioProducts, type Item, type Studio } from '@/domain/studio';
 import type { Save } from './studio-groups';
-import { Drawer, EmptyState, FileDropzone } from './studio-ui';
-import { Button, Input, Select, DataTable, Badge } from './studio-controls';
+import { ConfirmDialog, Drawer, EmptyState, FileDropzone } from './studio-ui';
+import { ActionMenu, Button, Input, Select, DataTable, Badge } from './studio-controls';
 import css from './studio.module.css';
 const shapes = {
   desk: 'Стол',
@@ -65,7 +65,8 @@ function ItemEditor({
   function cancel() {
     if (!dirty || confirm('Закрыть редактор? Черновик останется в этом браузере.')) close();
   }
-  const field = <K extends keyof Item>(key: K, value: Item[K]) => set((old) => ({ ...old, [key]: value }));
+  const field = <K extends keyof Item>(key: K, value: Item[K]) =>
+    set((old) => ({ ...old, [key]: value }));
   return (
     <Drawer title={existing ? 'Редактирование вещи' : 'Новая вещь'} close={cancel}>
       <form
@@ -110,7 +111,11 @@ function ItemEditor({
           </label>
           <label>
             Категория
-            <Select required value={item.categoryId} onChange={(e) => field('categoryId', e.target.value)}>
+            <Select
+              required
+              value={item.categoryId}
+              onChange={(e) => field('categoryId', e.target.value)}
+            >
               <option value="">Выбрать</option>
               {data.categories.map((c) => (
                 <option key={c.id} value={c.id}>
@@ -135,7 +140,10 @@ function ItemEditor({
           </label>
           <label>
             Теги через запятую
-            <Input value={item.tags.join(',')} onChange={(e) => field('tags', e.target.value.split(','))} />
+            <Input
+              value={item.tags.join(',')}
+              onChange={(e) => field('tags', e.target.value.split(','))}
+            />
           </label>
         </fieldset>
         <fieldset>
@@ -144,7 +152,8 @@ function ItemEditor({
             label="Перетащить или выбрать изображения"
             accept="image/png,image/jpeg,image/webp"
             onFiles={async (files) => {
-              if (item.images.length + files.length > 4) throw Error('Можно выбрать до четырёх изображений.');
+              if (item.images.length + files.length > 4)
+                throw Error('Можно выбрать до четырёх изображений.');
               field('images', [...item.images, ...(await Promise.all(files.map(prepareWorkshopImage)))]);
             }}
           />
@@ -252,7 +261,12 @@ function ItemEditor({
             ] as const
           ).map(([k, label]) => (
             <label className={css.check} key={k}>
-              <Input type="checkbox" checked={item[k]} onChange={(e) => field(k, e.target.checked)} />
+              <Input
+                type="checkbox"
+                role="switch"
+                checked={item[k]}
+                onChange={(e) => field(k, e.target.checked)}
+              />
               {label}
             </label>
           ))}
@@ -270,8 +284,22 @@ function ItemEditor({
     </Drawer>
   );
 }
-export function Items({ data, save, statusFilter }: { data: Studio; save: Save; statusFilter: string }) {
-  const [editor, setEditor] = useState<Item | null>(null),
+export function Items({
+  data,
+  save,
+  statusFilter,
+  createOnOpen,
+  itemId,
+  issue,
+}: {
+  createOnOpen: boolean;
+  itemId: string | null;
+  issue: string;
+  data: Studio;
+  save: Save;
+  statusFilter: string;
+}) {
+  const [editor, setEditor] = useState<Item | null>(data.items.find((i) => i.id === itemId) ?? null),
     [q, search] = useState(''),
     [category, cat] = useState(''),
     [collection, coll] = useState(''),
@@ -286,6 +314,9 @@ export function Items({ data, save, statusFilter }: { data: Studio; save: Save; 
     [value, setValue] = useState('');
   const [restore, setRestore] = useState<Item[]>([]),
     searchRef = useRef<HTMLInputElement>(null);
+  const [priceItem, priceEdit] = useState<Item | null>(null);
+  const [deleting, confirmDelete] = useState(false);
+  const opened = useRef(false);
   const create = () =>
     setEditor({
       id: 'workshop:' + browserId(),
@@ -310,6 +341,10 @@ export function Items({ data, save, statusFilter }: { data: Studio; save: Save; 
       createdAt: new Date().toISOString(),
     });
   useEffect(() => {
+    if (createOnOpen && !opened.current) {
+      opened.current = true;
+      create();
+    }
     function keys(e: KeyboardEvent) {
       if (
         editor ||
@@ -334,6 +369,9 @@ export function Items({ data, save, statusFilter }: { data: Studio; save: Save; 
   const matches = data.items
     .filter(
       (i) =>
+        (issue !== 'image' || !i.images.length) &&
+        (issue !== 'description' || !i.description) &&
+        (issue !== 'category' || !data.categories.some((c) => c.id === i.categoryId)) &&
         i.name.toLowerCase().includes(q.toLowerCase()) &&
         (!category || i.categoryId === category) &&
         (!collection || i.collectionId === collection) &&
@@ -345,13 +383,17 @@ export function Items({ data, save, statusFilter }: { data: Studio; save: Save; 
             : !i.isArchived && i.isPublished === (status === 'published'))),
     )
     .sort((a, b) =>
-      sort === 'name'
-        ? a.name.localeCompare(b.name, 'ru')
-        : sort === 'price'
-          ? a.price - b.price
-          : sort === 'new'
-            ? b.createdAt.localeCompare(a.createdAt)
-            : a.order - b.order,
+      sort === 'name-desc'
+        ? b.name.localeCompare(a.name, 'ru')
+        : sort === 'price-desc'
+          ? b.price - a.price
+          : sort === 'name'
+            ? a.name.localeCompare(b.name, 'ru')
+            : sort === 'price'
+              ? a.price - b.price
+              : sort === 'new'
+                ? b.createdAt.localeCompare(a.createdAt)
+                : a.order - b.order,
     );
   const last = Math.max(0, Math.ceil(matches.length / 16) - 1),
     current = Math.min(page, last),
@@ -360,7 +402,6 @@ export function Items({ data, save, statusFilter }: { data: Studio; save: Save; 
     select(ids.includes(id) ? ids.filter((v) => v !== id) : [...ids, id]);
   }
   async function bulk() {
-    if (action === 'delete' && !confirm('Удалить выбранные вещи из каталога?')) return;
     const snapshot = data.items.filter((i) => ids.includes(i.id));
     if (
       await save('Изменены вещи · ' + snapshot.length, (s) => {
@@ -408,50 +449,40 @@ export function Items({ data, save, statusFilter }: { data: Studio; save: Save; 
       select([]);
     }
   }
+  function publish(i: Item) {
+    void save('Изменена публикация ' + i.name, (s) => {
+      const x = s.items.find((x) => x.id === i.id)!;
+      if (!x.isPublished && x.price <= 0) throw Error('Перед публикацией задай положительную цену.');
+      x.isPublished = x.isArchived || !x.isPublished;
+      x.isArchived = false;
+    });
+  }
   function actions(i: Item) {
     return (
       <div className={css.actions}>
-        <Button onClick={() => setEditor(i)}>Изменить</Button>
-        <Button
-          aria-label={'Дублировать ' + i.name}
-          onClick={() =>
-            setEditor({
-              ...i,
-              id: 'workshop:' + browserId(),
-              name: i.name + ' (копия)',
-              isPublished: false,
-              createdAt: new Date().toISOString(),
-            })
-          }
-        >
-          Копия
-        </Button>
-        <Button
-          onClick={() =>
-            void save('Изменена публикация ' + i.name, (s) => {
-              const x = s.items.find((x) => x.id === i.id)!;
-              if (!x.isPublished && x.price <= 0) throw Error('Перед публикацией задай положительную цену.');
-              x.isPublished = !x.isPublished;
-              x.isArchived = false;
-            })
-          }
-        >
-          {i.isArchived ? 'Архив' : i.isPublished ? 'Опубликовано' : 'Черновик'}
-        </Button>
-        <Button
-          aria-label={'Изменить цену ' + i.name}
-          onClick={() => {
-            const v = prompt('Цена в монетах', String(i.price));
-            if (v !== null)
-              void save('Изменена цена ' + i.name, (s) => {
-                if (!Number.isInteger(+v) || +v < 1 || +v > 1000000)
-                  throw Error('Цена должна быть от 1 до 1 000 000.');
-                s.items.find((x) => x.id === i.id)!.price = +v;
-              });
-          }}
-        >
+        <Button aria-label={'Изменить цену ' + i.name} onClick={() => priceEdit(i)}>
           {i.price} ◈
         </Button>
+        <ActionMenu label={'Действия: ' + i.name}>
+          <Button onClick={() => setEditor(i)}>Изменить</Button>
+          <Button
+            aria-label={'Дублировать ' + i.name}
+            onClick={() =>
+              setEditor({
+                ...i,
+                id: 'workshop:' + browserId(),
+                name: i.name + ' (копия)',
+                isPublished: false,
+                createdAt: new Date().toISOString(),
+              })
+            }
+          >
+            Копия
+          </Button>
+          <Button onClick={() => publish(i)}>
+            {i.isArchived || !i.isPublished ? 'Опубликовать' : 'Скрыть'}
+          </Button>
+        </ActionMenu>
       </div>
     );
   }
@@ -461,7 +492,14 @@ export function Items({ data, save, statusFilter }: { data: Studio; save: Save; 
         <Button data-primary="true" onClick={create}>
           Новая вещь
         </Button>
-        <Button onClick={() => setTable(!table)}>{table ? 'Показать сетку' : 'Показать таблицу'}</Button>
+        <div className={css.segment}>
+          <Button aria-pressed={!table} onClick={() => setTable(false)}>
+            Сетка
+          </Button>
+          <Button aria-pressed={table} onClick={() => setTable(true)}>
+            Таблица
+          </Button>
+        </div>
         <Input
           ref={searchRef}
           type="search"
@@ -516,12 +554,14 @@ export function Items({ data, save, statusFilter }: { data: Studio; save: Save; 
         <Select aria-label="Сортировка" value={sort} onChange={(e) => setSort(e.target.value)}>
           <option value="order">Ручной порядок</option>
           <option value="name">Название</option>
-          <option value="price">Цена</option>
+          <option value="price">Цена по возрастанию</option>
+          <option value="price-desc">Цена по убыванию</option>
+          <option value="name-desc">Название Я–А</option>
           <option value="new">Сначала новые</option>
         </Select>
       </div>
       {ids.length > 0 && (
-        <div className={css.toolbar}>
+        <div className={css.bulkBar}>
           <strong>Выбрано · {ids.length}</strong>
           <Select
             aria-label="Массовое действие"
@@ -546,7 +586,11 @@ export function Items({ data, save, statusFilter }: { data: Studio; save: Save; 
             ))}
           </Select>
           {['category', 'collection'].includes(action) && (
-            <Select aria-label="Группа назначения" value={value} onChange={(e) => setValue(e.target.value)}>
+            <Select
+              aria-label="Группа назначения"
+              value={value}
+              onChange={(e) => setValue(e.target.value)}
+            >
               <option value="">Выбери группу</option>
               {(action === 'category' ? data.categories : data.collections).map((g) => (
                 <option key={g.id} value={g.id}>
@@ -563,7 +607,9 @@ export function Items({ data, save, statusFilter }: { data: Studio; save: Save; 
               onChange={(e) => setValue(e.target.value)}
             />
           )}
-          <Button onClick={() => void bulk()}>Применить</Button>
+          <Button onClick={() => (action === 'delete' ? confirmDelete(true) : void bulk())}>
+            Применить
+          </Button>
         </div>
       )}
       {restore.length > 0 && (
@@ -595,7 +641,17 @@ export function Items({ data, save, statusFilter }: { data: Studio; save: Save; 
           <thead>
             <tr>
               <th>Выбор</th>
-              <th>Вещь</th>
+              <th>
+                <Button onClick={() => setSort(sort === 'name' ? 'name-desc' : 'name')}>
+                  Название {sort === 'name-desc' ? '↓' : '↑'}
+                </Button>
+              </th>
+              <th>
+                <Button onClick={() => setSort(sort === 'price' ? 'price-desc' : 'price')}>
+                  Цена {sort === 'price-desc' ? '↓' : '↑'}
+                </Button>
+              </th>
+              <th>Публикация</th>
               <th>Действия</th>
             </tr>
           </thead>
@@ -610,7 +666,24 @@ export function Items({ data, save, statusFilter }: { data: Studio; save: Save; 
                     onChange={() => toggle(i.id)}
                   />
                 </td>
-                <td>{i.name}</td>
+                <td>
+                  <div className={css.tableItem}>
+                    <FurniturePreview product={{ ...i, category: '', image: i.images[0] }} />
+                    {i.name}
+                  </div>
+                </td>
+                <td>{i.price} ◈</td>
+                <td>
+                  <button
+                    role="switch"
+                    className={css.switcher}
+                    aria-label={'Опубликовать ' + i.name}
+                    aria-checked={i.isPublished && !i.isArchived}
+                    onClick={() => publish(i)}
+                  >
+                    <i />
+                  </button>
+                </td>
                 <td>{actions(i)}</td>
               </tr>
             ))}
@@ -627,14 +700,42 @@ export function Items({ data, save, statusFilter }: { data: Studio; save: Save; 
               <div className={css.art}>
                 <FurniturePreview product={{ ...i, category: '', image: i.images[0] }} />
               </div>
-              <Badge>{data.categories.find((c) => c.id === i.categoryId)?.name ?? 'Без категории'}</Badge>
+              <Badge>
+                {data.categories.find((c) => c.id === i.categoryId)?.name ?? 'Без категории'}
+              </Badge>
+              {i.collectionId && (
+                <Badge>{data.collections.find((c) => c.id === i.collectionId)?.name}</Badge>
+              )}
+              <span
+                className={css.status}
+                data-tone={i.isArchived ? 'archive' : i.isPublished ? 'success' : 'draft'}
+              >
+                {i.isArchived ? 'Архив' : i.isPublished ? 'Опубликовано' : 'Черновик'}
+              </span>
               <h3>{i.name}</h3>
               {actions(i)}
             </article>
           ))}
         </div>
       )}
-      {!rows.length && <EmptyState>Подходящих вещей нет. Измени фильтры или добавь вещь.</EmptyState>}
+      {!rows.length && (
+        <EmptyState>
+          Ничего не найдено.{' '}
+          <Button
+            onClick={() => {
+              search('');
+              cat('');
+              coll('');
+              setStatus('');
+              min('');
+              max('');
+              if (issue) window.location.assign('/admin/items');
+            }}
+          >
+            Сбросить фильтры
+          </Button>
+        </EmptyState>
+      )}
       <div className={css.toolbar}>
         <Button disabled={!current} onClick={() => paginate(current - 1)}>
           Назад
@@ -644,6 +745,54 @@ export function Items({ data, save, statusFilter }: { data: Studio; save: Save; 
           Далее
         </Button>
       </div>
+      {deleting && (
+        <ConfirmDialog
+          title="Удалить выбранные вещи?"
+          close={() => confirmDelete(false)}
+          confirm={() => {
+            confirmDelete(false);
+            void bulk();
+          }}
+        >
+          <p>Выбрано вещей · {ids.length}</p>
+        </ConfirmDialog>
+      )}
+      {priceItem && (
+        <Drawer title={'Цена · ' + priceItem.name} close={() => priceEdit(null)}>
+          <form
+            onSubmit={async (e) => {
+              e.preventDefault();
+              const price = Number(new FormData(e.currentTarget).get('price'));
+              if (
+                await save('Изменена цена ' + priceItem.name, (s) => {
+                  const item = s.items.find((i) => i.id === priceItem.id);
+                  if (!item) throw Error('Вещь больше недоступна');
+                  item.price = price;
+                })
+              )
+                priceEdit(null);
+            }}
+          >
+            <label>
+              Цена в монетах
+              <Input
+                required
+                name="price"
+                type="number"
+                defaultValue={priceItem.price}
+                min={1}
+                max={1000000}
+              />
+            </label>
+            <footer>
+              <Button type="button" onClick={() => priceEdit(null)}>
+                Отмена
+              </Button>
+              <Button data-primary="true">Сохранить</Button>
+            </footer>
+          </form>
+        </Drawer>
+      )}
       {editor && <ItemEditor data={data} initial={editor} save={save} close={() => setEditor(null)} />}
     </>
   );

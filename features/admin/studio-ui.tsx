@@ -3,10 +3,12 @@ import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
 import { UploadCloud, X, PackageOpen } from 'lucide-react';
 import css from './studio.module.css';
 export function Drawer({
+  modal = false,
   title,
   close,
   children,
 }: {
+  modal?: boolean;
   title: string;
   close: () => void;
   children: ReactNode;
@@ -22,7 +24,7 @@ export function Drawer({
     <dialog
       aria-labelledby={heading}
       ref={ref}
-      className={css.drawer}
+      className={modal ? css.confirmModal : css.drawer}
       onCancel={(e) => {
         e.preventDefault();
         close();
@@ -109,22 +111,24 @@ export function ConfirmDialog({
   confirm,
   close,
   disabled = false,
+  action = 'Удалить',
 }: {
   title: string;
   children: ReactNode;
   confirm: () => void;
   close: () => void;
   disabled?: boolean;
+  action?: string;
 }) {
   return (
-    <Drawer title={title} close={close}>
+    <Drawer modal title={title} close={close}>
       {children}
       <footer>
         <button type="button" onClick={close}>
           Отмена
         </button>
-        <button type="button" disabled={disabled} onClick={confirm}>
-          Удалить
+        <button type="button" data-variant="danger" disabled={disabled} onClick={confirm}>
+          {action}
         </button>
       </footer>
     </Drawer>

@@ -16,6 +16,7 @@ import type { Studio } from '@/domain/studio';
 import type { Save } from './studio-groups';
 import { Drawer, FileDropzone } from './studio-ui';
 import { Tabs } from './studio-controls';
+import { ActionMenu, Select } from './studio-controls';
 import css from './studio.module.css';
 export function useTracks() {
   const [tracks, set] = useState<WorkshopTrack[]>([]),
@@ -39,7 +40,7 @@ export function useTracks() {
   }, []);
   return { tracks, error };
 }
-function Player({ id }: { id: string }) {
+function Player({ id, autoPlay = false }: { id: string; autoPlay?: boolean }) {
   const [src, set] = useState('');
   useEffect(() => {
     let live = true,
@@ -57,6 +58,7 @@ function Player({ id }: { id: string }) {
   }, [id]);
   return src ? (
     <audio
+      autoPlay={autoPlay}
       controls
       preload="none"
       src={src}
@@ -106,7 +108,11 @@ export function Music({ data, save }: { data: Studio; save: Save }) {
   }
   function openTrack(t: WorkshopTrack) {
     setSource(t);
-    edit({ ...t, ...JSON.parse(sessionStorage.getItem('tinyme:track-draft:' + t.id) ?? '{}'), id: t.id });
+    edit({
+      ...t,
+      ...JSON.parse(sessionStorage.getItem('tinyme:track-draft:' + t.id) ?? '{}'),
+      id: t.id,
+    });
   }
   function closeTrack() {
     if (
@@ -122,10 +128,15 @@ export function Music({ data, save }: { data: Studio; save: Save }) {
   async function write(t: WorkshopTrack) {
     await saveWorkshopTrack(t);
   }
+  const [queue, setQueue] = useState<{ name: string; step: number }[]>([]);
   async function upload(files: File[]) {
+    setQueue(files.map((f) => ({ name: f.name, step: 0 })));
+    const mark = (n: number, step: number) =>
+      setQueue((q) => q.map((f, i) => (i === n ? { ...f, step } : f)));
     try {
       for (const [n, f] of files.entries()) {
         setProgress('Загрузка ' + (n + 1) + ' из ' + files.length + ' · ' + f.name);
+        mark(n, 1);
         const seconds = await inspectWorkshopAudio(f);
         const t = {
           id: 'workshop-track:' + browserId(),
@@ -140,11 +151,14 @@ export function Music({ data, save }: { data: Studio; save: Save }) {
           isPublished: false,
           playlistId: null,
         };
+        mark(n, 2);
         await saveWorkshopTrack(t, f);
+        mark(n, 3);
         await save('Загружен трек «' + t.title + '»', () => {});
       }
     } finally {
       setProgress('');
+      setQueue([]);
     }
   }
   return (
@@ -168,12 +182,24 @@ export function Music({ data, save }: { data: Studio; save: Save }) {
               <FileDropzone label="Выбрать аудиофайлы" accept=".mp3,.wav,.ogg" onFiles={upload} />
             </div>
           </section>
+          {queue.map((f, i) => (
+            <div key={i} className={css.uploadProgress}>
+              <span>{f.name}</span>
+              <progress max={3} value={f.step} aria-label={'Обработка ' + f.name} />
+              <small>{['В очереди', 'Проверка', 'Сохранение', 'Готово'][f.step]}</small>
+            </div>
+          ))}
           <p role="status">{progress}</p>
           <h2>Библиотека треков</h2>
-          {!tracks.length && <p>Загруженные треки появятся здесь как черновики. Прослушай трек и открой «Изменить», чтобы опубликовать его в комнате.</p>}
+          {!tracks.length && (
+            <p>
+              Загруженные треки появятся здесь как черновики. Прослушай трек и открой «Изменить», чтобы
+              опубликовать его в комнате.
+            </p>
+          )}
           {!!ids.length && (
             <div className={css.toolbar}>
-              <select
+              <Select
                 aria-label="Назначить плейлист"
                 value={playlist}
                 onChange={(e) => assign(e.target.value)}
@@ -184,7 +210,7 @@ export function Music({ data, save }: { data: Studio; save: Save }) {
                     {l.name}
                   </option>
                 ))}
-              </select>
+              </Select>
               <button
                 onClick={async () => {
                   try {
@@ -206,22 +232,49 @@ export function Music({ data, save }: { data: Studio; save: Save }) {
                 type="checkbox"
                 aria-label={'Выбрать ' + t.title}
                 checked={ids.includes(t.id)}
-                onChange={(e) => select(e.target.checked ? [...ids, t.id] : ids.filter((id) => id !== t.id))}
+                onChange={(e) =>
+                  select(e.target.checked ? [...ids, t.id] : ids.filter((id) => id !== t.id))
+                }
               />
-              <strong>{t.title}</strong>
+              <span className={css.trackArt} style={{ backgroundColor: t.color }} aria-hidden="true">
+                ♫
+              </span>
+              <div>
+                <strong>{t.title}</strong>
+                <small>{t.artist || 'Исполнитель не указан'}</small>
+              </div>
+              <span className={css.badge}>{t.genre}</span>
               <small>
                 {t.duration} · {(t.size / 1048576).toFixed(1)} МБ ·{' '}
                 {t.isPublished === false ? 'Черновик' : 'Опубликовано'}
               </small>
-              <button onClick={() => play(playing === t.id ? '' : t.id)}>{playing === t.id ? 'Закрыть плеер' : 'Прослушать'}</button>
-              <button onClick={() => openTrack(t)}>Изменить</button>
-              {playing === t.id && <Player id={t.id} />}
+              <button onClick={() => play(playing === t.id ? '' : t.id)}>
+                {playing === t.id ? 'Закрыть плеер' : 'Прослушать'}
+              </button>
+              <ActionMenu label={'Действия: ' + t.title}>
+                <button onClick={() => openTrack(t)}>Изменить трек</button>
+              </ActionMenu>
+              {playing === t.id && (
+                <div className={css.miniPlayer}>
+                  <strong>{t.title}</strong>
+                  <Player id={t.id} autoPlay />
+                  <button aria-label="Закрыть плеер" onClick={() => play('')}>
+                    ×
+                  </button>
+                </div>
+              )}
             </article>
           ))}
         </>
       ) : (
         <>
-          <div className={css.playlistIntro}><h2>{data.playlists.length ? "Мои плейлисты" : "Создай первый плейлист"}</h2><p>Собери музыку для одного настроения. Добавить треки можно во вкладке «Треки».</p><button data-primary="true" onClick={() => openList()}>Создать плейлист</button></div>
+          <div className={css.playlistIntro}>
+            <h2>{data.playlists.length ? 'Мои плейлисты' : 'Создай первый плейлист'}</h2>
+            <p>Собери музыку для одного настроения. Добавить треки можно во вкладке «Треки».</p>
+            <button data-primary="true" onClick={() => openList()}>
+              Создать плейлист
+            </button>
+          </div>
           {data.playlists.map((l) => (
             <div className={css.row} key={l.id}>
               {l.cover && <Image unoptimized src={l.cover} width={48} height={48} alt="" />}
@@ -318,6 +371,7 @@ export function Music({ data, save }: { data: Studio; save: Save }) {
               <label className={css.check}>
                 <input
                   type="checkbox"
+                  role="switch"
                   checked={edited.isPublished !== false}
                   onChange={(e) => edit({ ...edited, isPublished: e.target.checked })}
                 />

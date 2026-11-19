@@ -21,7 +21,7 @@ body {
 .immersive .main {
   background: linear-gradient(135deg, #242338, #2d253a);
 }
-.immersive:is([data-view="shop"], [data-view="inventory"], [data-view="music"], [data-view="stats"]) .main {
+.immersive:is([data-view="shop"], [data-view="inventory"], [data-view="music"], [data-view="stats"]) .main, .shop-palette {
   --color-card: #3a334a;
   --color-inset: #463d55;
   --color-hover: #51465f;
@@ -93,7 +93,7 @@ html[data-theme="light"] body {
   background-attachment: fixed;
 }
 html[data-theme="light"] .immersive .main,
-html[data-theme="light"] .immersive:is([data-view="shop"], [data-view="inventory"], [data-view="music"], [data-view="stats"]) .main {
+html[data-theme="light"] .immersive:is([data-view="shop"], [data-view="inventory"], [data-view="music"], [data-view="stats"]) .main, html[data-theme="light"] .shop-palette {
   --color-card: #fffaf5;
   --color-inset: #eee4e5;
   --color-hover: #e6d9df;
